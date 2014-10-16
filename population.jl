@@ -18,8 +18,7 @@ function distance_mat_fun(pop_db)
   for i = 1:pop_db[end,:ind_id]
     for j = (i+1):pop_db[end, :ind_id]
       distance_mat[j,i] = euclidean([pop_db[i, 2],pop_db[i, 3]], [pop_db[j, 2],pop_db[j, 3]])
-      distance_mat[i,j] = distance_mat[j,i]
     end
   end
-  distance_mat
+  distance_mat' + distance_mat
 end
