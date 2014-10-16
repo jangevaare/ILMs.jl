@@ -1,6 +1,6 @@
 using DataFrames
 
-event_db_fun(pop_db)
+function event_db_fun(pop_db)
 """
 Generate an event database with a single initial infection
 """
