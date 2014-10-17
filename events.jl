@@ -11,15 +11,15 @@ function find_susceptible_fun(event_db, time)
 """
 Find individuals which have not been infected prior to `time`
 """
-  step1=event_db[event_db[:time] .< time,:]
-  susceptible=step1[step1[:newstatus] .== 's', 1]
-  step2 = step1[step1[:newstatus] .== 'i', 1]
-if length(step2) > 0
-  step3 = trues(length(step1))
-  for i = 1:length(step1)
-    step3[i] = any(step2 .== step1[i]) && false
+  step1 = event_db[event_db[:time] .< time,:]
+  susceptible = step1[step1[:newstatus] .== 's', 1]
+  infected = step1[step1[:newstatus] .== 'i', 1]
+if length(infected) > 0
+  step2 = trues(length(susceptible))
+  for i = 1:length(susceptible)
+    step2[i] = any(infected .== susceptible[i]) && false
   end
-  susceptible[step3]
+  susceptible[step2]
   else
     susceptible
   end
@@ -29,15 +29,15 @@ function find_infectious_fun(event_db, time)
 """
 Find individuals which have been infected, but not recovered prior to `time`
 """
-  step1=event_db[event_db[:time] .< time,:]
-  infected=step1[step1[:newstatus] .== 'i', 1]
-  step2 = step1[step1[:newstatus] .== 'r', 1]
-if length(step2) > 0
-  step3 = trues(length(step1))
-  for i = 1:length(step1)
-    step3[i] = any(step2 .== step1[i]) && false
+  step1 = event_db[event_db[:time] .< time,:]
+  infected = step1[step1[:newstatus] .== 'i', 1]
+  recovered = step1[step1[:newstatus] .== 'r', 1]
+if length(recovered) > 0
+  step2 = trues(length(infected))
+  for i = 1:length(infected)
+    step2[i] = any(recovered .== infected[i]) && false
   end
-  infected[step3]
+  infected[step2]
   else
     infected
   end
