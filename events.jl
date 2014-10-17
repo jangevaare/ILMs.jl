@@ -17,7 +17,7 @@ Find individuals which have not been infected prior to `time`
 if length(infected) > 0
   step2 = trues(length(susceptible))
   for i = 1:length(susceptible)
-    step2[i] = any(infected .== susceptible[i]) && false
+    step2[i] = any(infected .== susceptible[i]) == false
   end
   susceptible[step2]
   else
@@ -35,7 +35,7 @@ Find individuals which have been infected, but not recovered prior to `time`
 if length(recovered) > 0
   step2 = trues(length(infected))
   for i = 1:length(infected)
-    step2[i] = any(recovered .== infected[i]) && false
+    step2[i] = any(recovered .== infected[i]) == false
   end
   infected[step2]
   else
