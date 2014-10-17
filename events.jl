@@ -50,3 +50,12 @@ Find individuals which have not been infected prior to `time`
   step1=event_db[event_db[:time] .< time,:]
   step1[step1[:newstatus] .== 'r', 1]
 end
+
+function infect_prob(distance_mat, event_db, time, alpha, beta)
+  """
+  Determine infection probabilities for all susceptible individuals
+  """
+  infectious = find_infectious_fun(event_db, time)
+  susceptible = find_susceptible_fun(event_db, time)
+  1 .- exp(-alpha .* sum(distance_mat[susceptible, infectious].^-beta, 2))
+end
