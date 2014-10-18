@@ -1,9 +1,10 @@
 include("population.jl")
 include("events.jl")
 include("inference.jl")
-using Distributions
 
-pop_db1 = pop_db_fun(100)
+using Distributions, PDMats
+
+pop_db1 = pop_db_fun(1000)
 dist_mat1 = distance_mat_fun(pop_db1)
 
 edb = event_db_fun(pop_db1)
@@ -18,4 +19,8 @@ recovery_times1 = find_recovery_times(edb, true)
 sa = susceptible_array_fun(edb, 20)
 ia = infectious_array_fun(edb, 20)
 
-@time SIR_loglikelihood(dist_mat1, sa, ia, recovery_times1, 1, 5, 0.1)
+rand(MvNormal(PDMat([[1 0], [0 1]])), 10)
+
+@time sir_loglikelihood=create_sir_loglikelihood(dist_mat1, sa, ia, recovery_times1)
+
+@time sir_loglikelihood(1,5,0.24)
