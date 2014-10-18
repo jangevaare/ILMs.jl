@@ -51,17 +51,30 @@ Find individuals which have not been infected prior to `time`
   step1[step1[:newstatus] .== 'r', 1]
 end
 
+function find_recovery_times(event_db)
+"""
+Determine recovery times for individuals
+"""
+  recovered_db=event_db[:newstatus == 'r',]
+  infected_db=event_db[:newstatus == 'i',]
+  recovery_times = zeros(size(recovered_db)[1])
+  for i = 1:(size(recovered_db)[1])
+    recovery_times[i] = recovered_db[i,:time] - infected_db[:ind_id == recovered_db[i,:ind_id],:time]
+  end
+  recovery_times
+end
+
 function infect_prob_fun(distance_mat, infectious, susceptible, alpha, beta)
-  """
-  Determine infection probabilities for all susceptible individuals
-  """
+"""
+Determine infection probabilities for all susceptible individuals
+"""
   1 .- exp(-alpha .* sum(distance_mat[susceptible, infectious].^-beta, 2))
 end
 
 function infect_fun(distance_mat, event_db, time, alpha, beta)
-  """
-  Propagate infection through population according to `alpha` and `beta`
-  """
+"""
+Propagate infection through population according to `alpha` and `beta`
+"""
   susceptible = find_susceptible_fun(event_db, time)
   infect_probs=infect_prob_fun(distance_mat, find_infectious_fun(event_db, time), susceptible, alpha, beta)
   infected = falses(length(susceptible))
@@ -72,9 +85,9 @@ function infect_fun(distance_mat, event_db, time, alpha, beta)
 end
 
 function recover_fun(event_db, time, gamma_inverse)
-  """
-  Recover individuals following a geometric distribution with p = `gamma_inverse`
-  """
+"""
+Recover individuals following a geometric distribution with p = `gamma_inverse`
+"""
   infectious = find_infectious_fun(event_db, time)
   recovered = falses(length(infectious))
   for i = 1:length(infectious)
