@@ -9,8 +9,9 @@ edb = event_db_fun(pop_db1)
 random_infect(edb, 2, 1)
 for t = 2:20
   infect_fun(dist_mat1, edb, convert(Float64,t), 1, 5)
-  recover_fun(edb, convert(Float64,t), 0.25)
+  recover_fun(edb, convert(Float64,t), 0.1)
 end
 
-recovery_times1 = find_recovery_times(edb)
+recovery_times1 = find_recovery_times(edb, true)
+
 loglikelihood(Geometric(0.8), recovery_times1)
