@@ -11,55 +11,62 @@ function find_susceptible_fun(event_db, time)
 """
 Find individuals which have not been infected prior to `time`
 """
-  step1 = event_db[event_db[:time] .< time,:]
-  susceptible = step1[step1[:newstatus] .== 's', 1]
-  infected = step1[step1[:newstatus] .== 'i', 1]
+  infected = event_db[(event_db[:time] .< time) & (event_db[:newstatus] .== 'i'),1]
+  susceptible = event_db[(event_db[:time] .< time) & (event_db[:newstatus] .== 's'),1]
 if length(infected) > 0
-  step2 = trues(length(susceptible))
+  step1 = trues(length(susceptible))
   for i = 1:length(susceptible)
-    step2[i] = any(infected .== susceptible[i]) == false
+    step1[i] = any(infected .== susceptible[i]) == false
   end
-  susceptible[step2]
+  susceptible[step1]
   else
     susceptible
   end
 end
 
-function find_infectious_fun(event_db, time)
+function find_infectious_fun(event_db, time, when)
 """
-Find individuals which have been infected, but not recovered prior to `time`
+Find individuals which have been infected, but have not recovered prior to, or at `time`
 """
-  step1 = event_db[event_db[:time] .< time,:]
-  infected = step1[step1[:newstatus] .== 'i', 1]
-  recovered = step1[step1[:newstatus] .== 'r', 1]
-if length(recovered) > 0
-  step2 = trues(length(infected))
-  for i = 1:length(infected)
-    step2[i] = any(recovered .== infected[i]) == false
+  if when =='now'
+    event_db[(event_db[:time] .== time) & (event_db[:newstatus] .== 'i'),1]
   end
-  infected[step2]
-  else
-    infected
+  if when =='prior'
+    infected = event_db[(event_db[:time] .< time) & (event_db[:newstatus] .== 'i'),1]
+    recovered = event_db[(event_db[:time] .< time) & (event_db[:newstatus] .== 'r'),1]
+    if length(recovered) > 0
+      step1 = trues(length(infected))
+      for i = 1:length(infected)
+        step1[i] = any(recovered .== infected[i]) == false
+      end
+      infected[step1]
+    else
+      infected
+    end
   end
 end
 
-function find_recovered_fun(event_db, time)
+function find_recovered_fun(event_db, time, when)
 """
-Find individuals which have not been infected prior to `time`
+Find individuals which have recovered at, or prior to `time`
 """
-  step1=event_db[event_db[:time] .< time,:]
-  step1[step1[:newstatus] .== 'r', 1]
+  if when == 'now'
+    event_db[(event_db[:time] .== time) & (event_db[:newstatus] .== 'r'),1]
+  end
+  if when == 'prior'
+    event_db[(event_db[:time] .< time) & (event_db[:newstatus] .== 'r'),1]
+  end
 end
 
 function find_recovery_times(event_db)
 """
 Determine recovery times for individuals
 """
-  recovered_db=event_db[:newstatus == 'r',]
-  infected_db=event_db[:newstatus == 'i',]
+  recovered_db=event_db[event_db[:newstatus] .== 'r', :]
+  infected_db=event_db[event_db[:newstatus] .== 'i', :]
   recovery_times = zeros(size(recovered_db)[1])
-  for i = 1:(size(recovered_db)[1])
-    recovery_times[i] = recovered_db[i,:time] - infected_db[:ind_id == recovered_db[i,:ind_id],:time]
+  for i = 1:length(recovery_times)
+    recovery_times[i] = recovered_db[i,:time] - infected_db[infected_db[:ind_id] .== recovered_db[i,:ind_id],:time][1]
   end
   recovery_times
 end
