@@ -68,9 +68,9 @@ Propagate infection through population according to `alpha` and `beta`
 """
   susceptible = find_susceptible_fun(event_db, time)
   infect_probs=infect_prob_fun(distance_mat, find_infectious_fun(event_db, time), susceptible, alpha, beta)
-  infected = falses(length(susceptible))
-  for i in 1:length(susceptible)
-    infected[i] = rand() < infect_probs[i,1]
+  infected = falses(length(infect_probs))
+  for i in 1:length(infect_probs)
+    infected[i] = rand() < infect_probs[i]
   end
   event_db[infected, 3] = time
 end
