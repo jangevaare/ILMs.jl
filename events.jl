@@ -21,7 +21,7 @@ Find individuals which have not been infected prior to `time`
 """
   susceptible_index = falses(size(event_db)[1])
   for i = 1:length(susceptible_index)
-    susceptible_index[i] = isnan(event_db[i,3]) || event_db[i,3] >= time
+    susceptible_index[i] = isnan(event_db[i,3]) || event_db[i,3] > time
   end
   susceptible_index
 end
@@ -32,7 +32,7 @@ Find individuals which have been infected prior to `time`, but have not recovere
 """
   infectious_index = falses(size(event_db)[1])
   for i = 1:length(infectious_index)
-    infectious_index[i] = event_db[i,3] < time && ((isnan(event_db[i,4])) || (time <= event_db[i,4]))
+    infectious_index[i] = event_db[i,3] <= time && ((isnan(event_db[i,4])) || (time < event_db[i,4]))
   end
   infectious_index
 end
@@ -43,7 +43,7 @@ Find individuals which have recovered prior to `time`
 """
   recovered_index = falses(size(event_db)[1])
   for i = 1:length(recovered_index)
-    recovered_index[i] = event_db[i,4] < time
+    recovered_index[i] = event_db[i,4] <= time
   end
   recovered_index
 end
