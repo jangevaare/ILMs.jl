@@ -28,6 +28,9 @@ time steps
 end
 
 function SIR_loglikelihood(distance_mat, recovery_times, event_db, alpha, beta, gamma_inverse, obs_length)
+"""
+Compute the log likelihood of discrete time SIR models
+"""
   loglikelihood(Geometric(gamma_inverse), recovery_times) +
   daily_loglikes = zeros(obs_length-1)
   for i = 1:length(daily_loglikes)
