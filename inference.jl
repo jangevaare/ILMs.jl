@@ -9,7 +9,7 @@ time steps
 """
   infectious_array=falses(size(event_db)[1], obs_length)
   for i = 1:obs_length
-    infectious_array[:,i] = find_infectious_fun(event_db, i)
+    infectious_array[:,i] = find_infectious_fun(event_db, i+1)
   end
   infectious_array
 end
@@ -22,17 +22,48 @@ time steps
 """
   susceptible_array=falses(size(event_db)[1], obs_length)
   for i = 1:obs_length
-    susceptible_array[:,i] = find_susceptible_fun(event_db, i)
+    susceptible_array[:,i] = find_susceptible_fun(event_db, i+1)
   end
   susceptible_array
 end
 
-function SIR_loglikelihood(distance_mat, recovery_times, event_db, alpha, beta, gamma_inverse, obs_length)
+function create_sir_loglikelihood(distance_mat, susceptible_array, infectious_array, recovery_times)
 """
-Compute the log likelihood of discrete time SIR models
+Create the SIR loglikelihood function, which accepts only 3 parameters,
+alpha, beta, and gamma_inverse
 """
-  loglikelihood(Geometric(gamma_inverse), recovery_times) +
-  daily_loglikes = zeros(obs_length-1)
-  for i = 1:length(daily_loglikes)
-    infectious = find_infectious_fun
-    daily_loglikes[i] = infect_prob_fun(distance_mat, infectious, susceptible, alpha, beta)
+  function sir_loglikelihood(alpha, beta, gamma)
+  """
+  Compute the log likelihood of discrete time SIR models
+  """
+    daily_loglikes = zeros(sum(sum(susceptible_array,1) .> 0)-1)
+    for i = 1:length(daily_loglikes)
+      infect_probs=nans(size(susceptible_array)[1])
+      infect_probs[susceptible_array[:,i]]=infect_prob_fun(distance_mat, infectious_array[:,i], susceptible_array[:,i], alpha, beta)
+      daily_loglikes[i]=sum(log([(infect_probs[susceptible_array[:,i] & infectious_array[:,i+1]]), 1.-(infect_probs[susceptible_array[:,i] & susceptible_array[:,i+1]])]))
+    end
+    loglikelihood(Geometric(1/gamma), recovery_times) + sum(daily_loglikes)
+  end
+sir_loglikelihood
+end
+
+function mcmc_array_fun(iterations, parameters)
+"""
+Create a simple empty array for use in MCMC,
+user must then insert initial parameters
+"""
+  zeros(iterations, parameters+1)
+end
+
+function mh_mcmc_fun(target, mcmc_array, prop_cov)
+"""
+Perform simple MH according to a log target and a previously
+specified mcmc_array
+"""
+  i=1
+  mcmc_array[i,end] = target(convert(Tuple, mcmc_array[i,1:(end-1)]))
+  transitions = rand(MvNormal(prop_cov), size(mcmc_array)[1]-1)
+  for i = 2:(size(mcmc_array)[1])
+
+    target(convert(Tuple, mcmc_array[i-1,1:(end-1)]+transitions[i]))
+

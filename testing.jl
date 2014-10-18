@@ -1,5 +1,6 @@
 include("population.jl")
 include("events.jl")
+include("inference.jl")
 using Distributions
 
 pop_db1 = pop_db_fun(100)
@@ -14,4 +15,7 @@ end
 
 recovery_times1 = find_recovery_times(edb, true)
 
-loglikelihood(Geometric(0.8), recovery_times1)
+sa = susceptible_array_fun(edb, 20)
+ia = infectious_array_fun(edb, 20)
+
+@time SIR_loglikelihood(dist_mat1, sa, ia, recovery_times1, 1, 5, 0.1)
