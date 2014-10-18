@@ -2,27 +2,43 @@ using DataFrames
 
 function event_db_fun(pop_db)
 """
-Generate an event database with a single initial infection
+Generate an event database, where all individuals are suscpetible at time 0
 """
-  DataFrame(ind_id = [pop_db[:ind_id], sample(pop_db[:ind_id])], newstatus = [rep('s',pop_db[end,:ind_id]),'i'], time = [rep(0,pop_db[end,:ind_id]), 1.0])
+  DataFrame(ind_id = pop_db[:ind_id], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
+end
+
+function random_infect(event_db, n, time)
+"""
+Randomly infect `n` individuals at `time`. At least one random infection is required
+at the beginning of a simulation
+"""
+  event_db[sample(event_db[:ind_id], n), 3] = time
 end
 
 function find_susceptible_fun(event_db, time)
 """
 Find individuals which have not been infected prior to `time`
 """
-  infected = event_db[(event_db[:time] .< time) & (event_db[:newstatus] .== 'i'),1]
-  susceptible = event_db[(event_db[:time] .< time) & (event_db[:newstatus] .== 's'),1]
-if length(infected) > 0
-  step1 = trues(length(susceptible))
-  for i = 1:length(susceptible)
-    step1[i] = any(infected .== susceptible[i]) == false
+  susceptible_index = falses(size(event_db)[1])
+  for i = 1:length(susceptible_index)
+    susceptible_index[i] = isnan(event_db[i,3]) || event_db[i,3] >= time
   end
-  susceptible[step1]
-  else
-    susceptible
-  end
+  susceptible_index
 end
+
+function find_infectious_fun(event_db, time)
+"""
+Find individuals which have been infected prior to `time`, but have not recovered
+"""
+  infectious_index = falses(size(event_db)[1])
+  for i = 1:length(infectious_index)
+    infectious_index[i] = event_db[i,3] < time && ((isnan(event_db[i,4])) || (time <= event_db[i,4]))
+  end
+  infectious_index
+end
+
+
+
 
 function find_infectious_fun(event_db, time, when)
 """
