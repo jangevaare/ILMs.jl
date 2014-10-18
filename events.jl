@@ -59,6 +59,9 @@ function infect_prob_fun(distance_mat, infectious, susceptible, alpha, beta)
 end
 
 function infect_fun(distance_mat, event_db, time, alpha, beta)
+  """
+  Propagate infection through population according to `alpha` and `beta`
+  """
   susceptible = find_susceptible_fun(event_db, time)
   infect_probs=infect_prob_fun(distance_mat, find_infectious_fun(event_db, time), susceptible, alpha, beta)
   infected = falses(length(susceptible))
@@ -66,5 +69,17 @@ function infect_fun(distance_mat, event_db, time, alpha, beta)
     infected[i] = rand() < infect_probs[i,1]
   end
   append!(event_db, DataFrame(ind_id = susceptible[infected], newstatus = rep('i', sum(infected)), time = rep(time, sum(infected))))
+end
+
+function recover_fun(event_db, time, gamma_inverse)
+  """
+  Recover individuals following a geometric distribution with p = `gamma_inverse`
+  """
+  infectious = find_infectious_fun(event_db, time)
+  recovered = falses(length(infectious))
+  for i = 1:length(infectious)
+    recovered[i] = rand() < gamma_inverse
+  end
+  append!(event_db, DataFrame(ind_id = infectious[recovered], newstatus = rep('r', sum(recovered)), time = rep(time, sum(recovered))))
 end
 
