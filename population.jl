@@ -1,13 +1,11 @@
-using DataFrames
-using Distances
+using DataFrames, Distances, Distributions
 
-function pop_db_fun(n)
+function pop_db_fun(n, d)
   """
   Generate a population of size `n` distributed spatially according to
-  a bivariate normal distribution, more distribution settings may be
-  defined in the future
+  a bivariate distribution, `d`
   """
-  cbind(DataFrame(ind_id = 1:n), DataFrame(randn(n, 2)))
+  cbind(DataFrame(ind_id = 1:n), DataFrame(rand(d, n)))
 end
 
 function distance_mat_fun(pop_db)
