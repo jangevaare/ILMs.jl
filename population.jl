@@ -5,7 +5,7 @@ function pop_db_fun(n, d)
   Generate a population of size `n` distributed spatially according to
   a bivariate distribution, `d`
   """
-  cbind(DataFrame(ind_id = 1:n), DataFrame(rand(d, n)))
+  cbind(DataFrame(ind_id = 1:n), DataFrame(rand(d, n)'))
 end
 
 function distance_mat_fun(pop_db)
