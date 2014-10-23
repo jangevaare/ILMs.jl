@@ -36,40 +36,18 @@ alpha, beta, and gamma_inverse
   """
   Compute the log likelihood of discrete time SIR models (alpha, beta, gamma)
   """
-    alpha=parameters[1]
-    beta=parameters[2]
-    inversegamma=parameters[3]
-    if alpha <= 0 || beta <= 0 || inversegamma >= 1 || inversegamma <= 0
+    distance_mat_alphabeta = distance_mat_alphabeta_fun(distance_mat, parameters[1], parameters[2])
+    if parameters[1] <= 0 || parameters[2] <= 0 || parameters[3] >= 1 || parameters[3] <= 0
       -Inf
     else
       daily_loglikes = zeros(sum(sum(susceptible_array,1) .> 0)-1)
       for i = 1:length(daily_loglikes)
         infect_probs=nans(size(susceptible_array)[1])
-        infect_probs[susceptible_array[:,i]]=infect_prob_fun(distance_mat, infectious_array[:,i], susceptible_array[:,i], alpha, beta)
+        infect_probs[susceptible_array[:,i]]=infect_prob_fun(distance_mat_alphabeta, infectious_array[:,i], susceptible_array[:,i])
         daily_loglikes[i]=sum(log([(infect_probs[susceptible_array[:,i] & infectious_array[:,i+1]]), 1.-(infect_probs[susceptible_array[:,i] & susceptible_array[:,i+1]])]))
       end
-      loglikelihood(Geometric(inversegamma), recovery_times) + logpdf(Uniform(0,1), inversegamma) + logpdf(Gamma(1,1), alpha) + logpdf(Gamma(5,1), beta) + sum(daily_loglikes)
+      loglikelihood(Geometric(parameters[3]), recovery_times) + logpdf(Uniform(0,1), parameters[3]) + logpdf(Gamma(1,1), parameters[1]) + logpdf(Gamma(5,1), parameters[2]) + sum(daily_loglikes)
     end
   end
 sir_loglikelihood
 end
-
-function mcmc_array_fun(iterations, parameters)
-"""
-Create a simple empty array for use in MCMC,
-user must then insert initial parameters
-"""
-  zeros(iterations, parameters+1)
-end
-
-# function mh_mcmc_fun(target, mcmc_array, prop_cov)
-# """
-# Perform simple MH according to a log target and a previously
-# specified mcmc_array
-# """
-#   i=1
-#   mcmc_array[i,end] = target(convert(Tuple, mcmc_array[i,1:(end-1)]))
-#   transitions = rand(MvNormal(prop_cov), size(mcmc_array)[1]-1)
-#   for i = 2:(size(mcmc_array)[1])
-#     target(convert(Tuple, mcmc_array[i-1,1:(end-1)]+transitions[i]))
-
