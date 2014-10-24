@@ -66,14 +66,14 @@ function distance_mat_alphabeta_fun(distance_mat, alpha, beta)
 """
 Find the -alpha*(distance matrix^-beta)
 """
-  -alpha .* (distance_mat .^ -beta)
+  alpha .* (distance_mat .^ -beta)
 end
 
 function infect_prob_fun(distance_mat_alphabeta, infectious, susceptible)
 """
 Determine infection probabilities for all susceptible individuals
 """
-  1 .- exp(sum(distance_mat_alphabeta[susceptible, infectious], 2))
+  1 .- exp(-sum(distance_mat_alphabeta[susceptible, infectious], 2))
 end
 
 function infect_fun(distance_mat_alphabeta, event_db, time)
@@ -96,24 +96,24 @@ Generate infection times (exponentially distributed) based on current
 infectious and susceptible. The minimum time will become the next
 infected individual, remaining times will need to be recalculated
 """
-  susceptible = find_susceptible_fun(event_db, time)
-  infect_times = zeros(length(susceptible))
-  exponential_lambda = sum(distance_mat_alphabeta[susceptible, infectious], 2)
+  exponential_lambda = sum(distance_mat_alphabeta[susceptible, infectious], 2).^-1
+  infect_times = infs(length(exponential_lambda))
+  for i = 1:length(exponential_lambda)
+    infect_times[i]= rand(Exponential(exponential_lambda[i,1]))
+  end
+  infect_times
+end
 
-  infect_times[susceptible]= Exponential(sum(distance_mat_alphabeta[susceptible, infectious], 2))
-
-function continuous_infectrecover_fun(event_db)
-"""
-Generate an additional infection and recovery based on
-the lastest state of the population
-"""
-  maxtime_infectious=max(event_db[:,3])
-  susceptible = find_susceptible_fun(event_db, maxtime_infectious)
-  infect_probs = zeros(length(susceptible))
-  infect_probs[susceptible]=infect_prob_fun(distance_mat_beta, find_infectious_fun(event_db, time), susceptible, alpha)
-
-
-
+# function continuous_infectrecover_fun(event_db)
+# """
+# Generate an additional infection and recovery based on
+# the lastest state of the population
+# """
+#   maxtime_infectious=max(event_db[:,3])
+#   susceptible = find_susceptible_fun(event_db, maxtime_infectious)
+#   infect_probs = zeros(length(susceptible))
+#   infect_probs[susceptible]=infect_prob_fun(distance_mat_beta, find_infectious_fun(event_db, time), susceptible, alpha)
+# end
 
 function recover_fun(event_db, time, gamma_inverse)
 """
