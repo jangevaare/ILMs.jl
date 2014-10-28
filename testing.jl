@@ -8,8 +8,13 @@ pop_db1 = pop_db_fun(50, MvNormal(eye(2).*2))
 dist_mat1 = distance_mat_fun(pop_db1)
 dist_mat_ab1 = distance_mat_alphabeta_fun(dist_mat1, 1, 15)
 edb = event_db_fun(pop_db1)
-random_infect(edb, 2, 1)
-continuous_infect_fun(edb, dist_mat_ab1)
+random_infect(edb)
+random_infectrecover(edb, 4)
+edb
+
+@time continuous_infect_fun(edb, dist_mat_ab1)
+
+edb
 
 ([0.1:0.1:0.5])[[true, true, false, false, true]]
 

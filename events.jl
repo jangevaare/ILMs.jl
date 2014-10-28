@@ -4,15 +4,27 @@ function event_db_fun(pop_db)
 """
 Generate an event database, where all individuals are suscpetible at time 0
 """
-  DataFrame(ind_id = pop_db[:ind_id], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
+  DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
 end
 
-function random_infect(event_db, n, time)
+function random_infect(event_db)
 """
-Randomly infect `n` individuals at `time`. At least one random infection is required
-at the beginning of a simulation
+  Randomly infect 1 individual at time = 1.0. A random infection is required
+  at the beginning of a simulation. Used for SI models
 """
-  event_db[sample(event_db[:ind_id], n), 3] = time
+  event_db[sample(event_db[:,1], 1), 3] = 1.0
+  event_db = event_db[:, [1,2,3]]
+end
+
+function random_infectrecover(event_db, exp_gamma)
+"""
+  Randomly infect 1 individual at time = 1.0, and their recovery based on a mean
+  recovery time of `exp_gamma`. At least one random infection is required
+  at the beginning of a simulation
+"""
+  chosen_one=sample(event_db[:,1], 1)
+  event_db[chosen_one, 3] = 1.0
+  event_db[chosen_one, 4] = 1.0 + rand(Exponential(1/exp_gamma), 1)
 end
 
 function find_susceptible_fun(event_db, time)
@@ -137,7 +149,8 @@ Generate an additional infection the lastest state of the population
   susceptible = find_now_susceptible_fun(event_db, maxtime_infectious)
   infectious = find_now_infectious_fun(event_db, maxtime_infectious)
   infection_times = infect_time_fun(distance_mat_alphabeta, infectious, susceptible)
-  event_db[infection_times .== minimum(infection_times),3] = maxtime_infectious + minimum(infection_times)
+  which_min = infection_times .== minimum(infection_times)
+  event_db[which_min,3] = maxtime_infectious + infection_times(which_min)
 end
 
 function recover_fun(event_db, time, gamma_inverse)
