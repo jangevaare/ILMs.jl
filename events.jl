@@ -1,30 +1,39 @@
 using DataFrames
 
-function event_db_fun(pop_db)
-"""
-Generate an event database, where all individuals are suscpetible at time 0
-"""
-  DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
+function event_db_fun(pop_db, ilm)
+  """
+  Generate an event database, where all individuals are suscpetible at time
+  0. Specify whether for an SI model or an SIR model.
+  """
+  if ilm == 'SI'
+    DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]))
+  end
+  if ilm == 'SIR'
+    DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
+  end
 end
 
-function random_infect(event_db)
-"""
-  Randomly infect 1 individual at time = 1.0. A random infection is required
-  at the beginning of a simulation. Used for SI models
-"""
-  event_db[sample(event_db[:,1], 1), 3] = 1.0
-  event_db = event_db[:, [1,2,3]]
-end
-
-function random_infectrecover(event_db, exp_gamma)
-"""
-  Randomly infect 1 individual at time = 1.0, and their recovery based on a mean
-  recovery time of `exp_gamma`. At least one random infection is required
-  at the beginning of a simulation
-"""
-  chosen_one=sample(event_db[:,1], 1)
-  event_db[chosen_one, 3] = 1.0
-  event_db[chosen_one, 4] = 1.0 + rand(Exponential(1/exp_gamma), 1)
+function intial_infect(event_db, cd, gamma)
+  """
+  Randomly infect 1 individual at time = 1.0, A random infection is required
+  at the beginning of all simulations. Specify whether ILM is continuous
+  ("c") or discrete ("d"), which selects between a exponential or geometric
+  recovery time functions. If `gamma` (the mean recovery time) is > 0, then
+  a recovery for this infection will also be probabilistically generated.
+  """
+  if gamma > 0
+    if cd == "continuous"
+      recovery_dist = Exponential(1/gamma)
+    end
+    if cd == "discrete"
+      recovery_dist = Geometric(1/gamma)
+    end
+    chosen_one=sample(event_db[:,1], 1)
+    event_db[chosen_one, 3] = 1.0
+    event_db[chosen_one, 4] = 1.0 + rand(recovery_dist, 1)
+  else
+    event_db[sample(event_db[:,1], 1), 3] = 1.0
+  end
 end
 
 function find_susceptible_fun(event_db, time)
