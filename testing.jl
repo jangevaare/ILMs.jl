@@ -4,16 +4,29 @@ include("inference.jl")
 
 using Distributions, PDMats, Mamba
 
-pop_db1 = pop_db_fun(625, MvNormal(eye(2).*2))
+pop_db1 = pop_db_fun(50, MvNormal(eye(2).*2))
 dist_mat1 = distance_mat_fun(pop_db1)
-@time dist_mat_ab1 = distance_mat_alphabeta_fun(dist_mat1, 1, 15)
+dist_mat_ab1 = distance_mat_alphabeta_fun(dist_mat1, 1, 15)
 edb = event_db_fun(pop_db1)
 random_infect(edb, 2, 1)
+continuous_infect_fun(edb, dist_mat_ab1)
 
-for t = 2:10
-  infect_fun(dist_mat_ab1, edb, convert(Float64,t))
-  recover_fun(edb, convert(Float64,t), 0.1)
+([0.1:0.1:0.5])[[true, true, false, false, true]]
+
+for t = 1:20
+  continuous_infect_fun(edb, dist_mat_ab1)
 end
+
+print(maximum(edb[:,3])) + minimum(infection_times1))
+
+sum(find_now_susceptible_fun(edb, 1.0))
+sum(find_now_infectious_fun(edb, 1.0))
+
+infection_times1 = infect_time_fun(dist_mat_ab1, find_now_infectious_fun(edb, 1.0), find_now_susceptible_fun(edb, 1.0))
+infection_times1[infection_times1 .== minimum(infection_times1)]
+
+
+
 
 recovery_times1 = find_recovery_times(edb, true)
 sa = susceptible_array_fun(edb, 10)

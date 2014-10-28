@@ -28,7 +28,8 @@ end
 
 function find_infectious_fun(event_db, time)
 """
-Find individuals which have been infected prior to `time`, but have not recovered
+Find individuals which have been infected prior to `time`,
+but have not recovered by `time`
 """
   infectious_index = falses(size(event_db)[1])
   for i = 1:length(infectious_index)
@@ -39,13 +40,36 @@ end
 
 function find_recovered_fun(event_db, time)
 """
-Find individuals which have recovered prior to `time`
+Find individuals which have recovered prior to or at `time`
 """
   recovered_index = falses(size(event_db)[1])
   for i = 1:length(recovered_index)
     recovered_index[i] = event_db[i,4] <= time
   end
   recovered_index
+end
+
+function find_now_susceptible_fun(event_db, time)
+"""
+Find individuals which have not been infected prior to or at `time`
+"""
+  susceptible_index = falses(size(event_db)[1])
+  for i = 1:length(susceptible_index)
+    susceptible_index[i] = isnan(event_db[i,3]) || event_db[i,3] > time
+  end
+  susceptible_index
+end
+
+function find_now_infectious_fun(event_db, time)
+"""
+Find individuals which have been infected prior to or at `time`, and have either
+not recovered, or have yet to recover
+"""
+  infectious_index = falses(size(event_db)[1])
+  for i = 1:length(infectious_index)
+    infectious_index[i] = event_db[i,3] <= time && ((isnan(event_db[i,4])) || (time < event_db[i,4]))
+  end
+  infectious_index
 end
 
 function find_recovery_times(event_db, narm)
@@ -96,24 +120,25 @@ Generate infection times (exponentially distributed) based on current
 infectious and susceptible. The minimum time will become the next
 infected individual, remaining times will need to be recalculated
 """
-  exponential_lambda = sum(distance_mat_alphabeta[susceptible, infectious], 2).^-1
-  infect_times = infs(length(exponential_lambda))
-  for i = 1:length(exponential_lambda)
-    infect_times[i]= rand(Exponential(exponential_lambda[i,1]))
+  exponential_rate = fill(Inf, length(susceptible))
+  exponential_rate[susceptible] = sum(distance_mat_alphabeta[susceptible, infectious], 2) .^ -1
+  infect_times = fill(Inf, length(susceptible))
+  for i = 1:length(susceptible)
+    infect_times[i]= rand(Exponential(exponential_rate[i]))
   end
   infect_times
 end
 
-# function continuous_infectrecover_fun(event_db)
-# """
-# Generate an additional infection and recovery based on
-# the lastest state of the population
-# """
-#   maxtime_infectious=max(event_db[:,3])
-#   susceptible = find_susceptible_fun(event_db, maxtime_infectious)
-#   infect_probs = zeros(length(susceptible))
-#   infect_probs[susceptible]=infect_prob_fun(distance_mat_beta, find_infectious_fun(event_db, time), susceptible, alpha)
-# end
+function continuous_infect_fun(event_db, distance_mat_alphabeta)
+"""
+Generate an additional infection the lastest state of the population
+"""
+  maxtime_infectious=maximum(event_db[:,3])
+  susceptible = find_now_susceptible_fun(event_db, maxtime_infectious)
+  infectious = find_now_infectious_fun(event_db, maxtime_infectious)
+  infection_times = infect_time_fun(distance_mat_alphabeta, infectious, susceptible)
+  event_db[infection_times .== minimum(infection_times),3] = maxtime_infectious + minimum(infection_times)
+end
 
 function recover_fun(event_db, time, gamma_inverse)
 """
