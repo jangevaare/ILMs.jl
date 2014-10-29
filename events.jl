@@ -1,4 +1,4 @@
-using DataFrames
+using DataFrames, Distributions
 
 function create_event_db(pop_db, ilm="SIR")
   """
@@ -83,9 +83,9 @@ function find_state(event_db, time, state, cd="discrete")
 end
 
 function find_recovery_times(event_db, narm=true)
-"""
-Determine recovery times for individuals
-"""
+  """
+  Determine recovery times for individuals
+  """
   if narm == false
     return event_db[:,4]  - event_db[:,3]
   elseif narm == true
@@ -111,11 +111,11 @@ function infection_probabilities(distance_mat_alphabeta, infectious, susceptible
 end
 
 function infection_times(distance_mat_alphabeta, infectious, susceptible)
-"""
-Generate infection times (exponentially distributed) based on current
-infectious and susceptible. The minimum time will become the next
-infected individual, remaining times will need to be recalculated
-"""
+  """
+  Generate infection times (exponentially distributed) based on current
+  infectious and susceptible. The minimum time will become the next
+  infected individual, remaining times will need to be recalculated
+  """
   exponential_rate = fill(Inf, length(susceptible))
   exponential_rate[susceptible] = sum(distance_mat_alphabeta[susceptible, infectious], 2) .^ -1
   infect_times = fill(Inf, length(susceptible))
