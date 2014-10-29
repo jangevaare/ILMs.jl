@@ -1,15 +1,15 @@
 using DataFrames
 
-function event_db_fun(pop_db, ilm)
+function create_event_db(pop_db, ilm)
   """
   Generate an event database, where all individuals are suscpetible at time
   0. Specify whether for an SI model or an SIR model.
   """
-  if ilm == 'SI'
-    DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]))
+  if ilm == "SI"
+    return DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]))
   end
-  if ilm == 'SIR'
-    DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
+  if ilm == "SIR"
+    return DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
   end
 end
 
@@ -21,7 +21,7 @@ function intial_infect(event_db, cd, gamma)
   recovery time functions. If `gamma` (the mean recovery time) is > 0, then
   a recovery for this infection will also be probabilistically generated.
   """
-  if gamma > 0
+  if gamma > 0 && size(event_db)[2] == 4
     if cd == "continuous"
       recovery_dist = Exponential(1/gamma)
     end
@@ -34,6 +34,52 @@ function intial_infect(event_db, cd, gamma)
   else
     event_db[sample(event_db[:,1], 1), 3] = 1.0
   end
+  return event_db
+end
+
+function find_state(event_db, time, state, cd)
+  """
+  Find the individuals falling into `state`, at `time` from
+  a continuous or discrete ILM
+  """
+  state_index = falses(size(event_db)[1])
+  if state == "s"
+    if cd == "discrete"
+      for i = 1:length(state_index)
+        state_index[i] = isnan(event_db[i,3]) || event_db[i,3] >= time
+      end
+    end
+    if cd == "continuous"
+      for i = 1:length(state_index)
+        state_index[i] = isnan(event_db[i,3]) || event_db[i,3] > time
+      end
+    end
+  end
+  if state == "i"
+    if cd == "discrete"
+      for i = 1:length(state_index)
+        state_index[i] = event_db[i,3] < time && ((isnan(event_db[i,4])) || (time <= event_db[i,4]))
+      end
+    end
+    if cd == "continuous"
+      for i = 1:length(state_index)
+        state_index[i] = event_db[i,3] <= time && ((isnan(event_db[i,4])) || (time < event_db[i,4]))
+      end
+    end
+  end
+  if state == "r"
+    if cd == "discrete"
+      for i = 1:length(state_index)
+        state_index[i] = event_db[i,4] < time
+      end
+    end
+    if cd == "continuous"
+      for i = 1:length(state_index)
+        state_index[i] = event_db[i,4] <= time
+      end
+    end
+  end
+  return state_index
 end
 
 function find_susceptible_fun(event_db, time)

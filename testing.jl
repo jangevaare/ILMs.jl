@@ -8,7 +8,9 @@ pop_db1 = pop_db_fun(50, MvNormal(eye(2).*2))
 dist_mat1 = distance_mat_fun(pop_db1)
 dist_mat_ab1 = distance_mat_alphabeta_fun(dist_mat1, 1, 15)
 
-edb = event_db_fun(pop_db1)
+edb = event_db_fun(pop_db1, "SI")
+size(edb)
+
 random_infect(edb)
 edb
 
