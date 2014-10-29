@@ -1,6 +1,6 @@
 using DataFrames
 
-function create_event_db(pop_db, ilm)
+function create_event_db(pop_db, ilm="SIR")
   """
   Generate an event database, where all individuals are suscpetible at time
   0. Specify whether for an SI model or an SIR model.
@@ -13,7 +13,7 @@ function create_event_db(pop_db, ilm)
   end
 end
 
-function intial_infect(event_db, cd, gamma)
+function intial_infect(event_db, cd="discrete", gamma=0)
   """
   Randomly infect 1 individual at time = 1.0, A random infection is required
   at the beginning of all simulations. Specify whether ILM is continuous
@@ -37,13 +37,13 @@ function intial_infect(event_db, cd, gamma)
   return event_db
 end
 
-function find_state(event_db, time, state, cd)
+function find_state(event_db, time, state, cd="discrete")
   """
-  Find the individuals falling into `state`, at `time` from
+  Find the individuals falling into `state` (S, I, or R), at `time` from
   a continuous or discrete ILM
   """
-  state_index = falses(size(event_db)[1])
-  if state == "s"
+  state_index = fill(false, size(event_db)[1])
+  if state == "S"
     if cd == "discrete"
       for i = 1:length(state_index)
         state_index[i] = isnan(event_db[i,3]) || event_db[i,3] >= time
@@ -55,7 +55,7 @@ function find_state(event_db, time, state, cd)
       end
     end
   end
-  if state == "i"
+  if state == "I"
     if cd == "discrete"
       for i = 1:length(state_index)
         state_index[i] = event_db[i,3] < time && ((isnan(event_db[i,4])) || (time <= event_db[i,4]))
@@ -67,7 +67,7 @@ function find_state(event_db, time, state, cd)
       end
     end
   end
-  if state == "r"
+  if state == "R"
     if cd == "discrete"
       for i = 1:length(state_index)
         state_index[i] = event_db[i,4] < time
@@ -82,106 +82,35 @@ function find_state(event_db, time, state, cd)
   return state_index
 end
 
-function find_susceptible_fun(event_db, time)
-"""
-Find individuals which have not been infected prior to `time`
-"""
-  susceptible_index = falses(size(event_db)[1])
-  for i = 1:length(susceptible_index)
-    susceptible_index[i] = isnan(event_db[i,3]) || event_db[i,3] >= time
-  end
-  susceptible_index
-end
-
-function find_infectious_fun(event_db, time)
-"""
-Find individuals which have been infected prior to `time`,
-but have not recovered by `time`
-"""
-  infectious_index = falses(size(event_db)[1])
-  for i = 1:length(infectious_index)
-    infectious_index[i] = event_db[i,3] < time && ((isnan(event_db[i,4])) || (time <= event_db[i,4]))
-  end
-  infectious_index
-end
-
-function find_recovered_fun(event_db, time)
-"""
-Find individuals which have recovered prior to or at `time`
-"""
-  recovered_index = falses(size(event_db)[1])
-  for i = 1:length(recovered_index)
-    recovered_index[i] = event_db[i,4] <= time
-  end
-  recovered_index
-end
-
-function find_now_susceptible_fun(event_db, time)
-"""
-Find individuals which have not been infected prior to or at `time`
-"""
-  susceptible_index = falses(size(event_db)[1])
-  for i = 1:length(susceptible_index)
-    susceptible_index[i] = isnan(event_db[i,3]) || event_db[i,3] > time
-  end
-  susceptible_index
-end
-
-function find_now_infectious_fun(event_db, time)
-"""
-Find individuals which have been infected prior to or at `time`, and have either
-not recovered, or have yet to recover
-"""
-  infectious_index = falses(size(event_db)[1])
-  for i = 1:length(infectious_index)
-    infectious_index[i] = event_db[i,3] <= time && ((isnan(event_db[i,4])) || (time < event_db[i,4]))
-  end
-  infectious_index
-end
-
-function find_recovery_times(event_db, narm)
+function find_recovery_times(event_db, narm=true)
 """
 Determine recovery times for individuals
 """
   if narm == false
-    event_db[:,4]  - event_db[:,3]
+    return event_db[:,4]  - event_db[:,3]
   elseif narm == true
     times = event_db[:,4]  - event_db[:,3]
-    times[isnan(times).==false]
+    return times[isnan(times).==false]
   else
     error("narm (2nd argument) must be boolean")
   end
 end
 
-function distance_mat_alphabeta_fun(distance_mat, alpha, beta)
-"""
-Find the -alpha*(distance matrix^-beta)
-"""
-  alpha .* (distance_mat .^ -beta)
+function dist_ab_matrix(distance_mat, alpha, beta)
+  """
+  Find the -alpha*(distance matrix^-beta)
+  """
+  return alpha .* (distance_mat .^ -beta)
 end
 
-function infect_prob_fun(distance_mat_alphabeta, infectious, susceptible)
-"""
-Determine infection probabilities for all susceptible individuals
-"""
+function infection_probabilities(distance_mat_alphabeta, infectious, susceptible)
+  """
+  Determine infection probabilities for all susceptible individuals
+  """
   1 .- exp(-sum(distance_mat_alphabeta[susceptible, infectious], 2))
 end
 
-function infect_fun(distance_mat_alphabeta, event_db, time)
-"""
-Propagate infection through population according to `alpha` and `beta`
-"""
-  susceptible = find_susceptible_fun(event_db, time)
-  infect_probs = zeros(length(susceptible))
-  infect_probs[susceptible]=infect_prob_fun(distance_mat_alphabeta, find_infectious_fun(event_db, time), susceptible)
-  infected = falses(length(susceptible))
-  for i in 1:length(infect_probs)
-    infected[i] = rand() < infect_probs[i]
-  end
-  event_db[infected, 3] = time
-end
-
-function infect_time_fun(distance_mat_alphabeta, infectious, susceptible)
+function infection_times(distance_mat_alphabeta, infectious, susceptible)
 """
 Generate infection times (exponentially distributed) based on current
 infectious and susceptible. The minimum time will become the next
@@ -196,26 +125,35 @@ infected individual, remaining times will need to be recalculated
   infect_times
 end
 
-function continuous_infect_fun(event_db, distance_mat_alphabeta)
-"""
-Generate an additional infection the lastest state of the population
-"""
-  maxtime_infectious=maximum(event_db[:,3])
-  susceptible = find_now_susceptible_fun(event_db, maxtime_infectious)
-  infectious = find_now_infectious_fun(event_db, maxtime_infectious)
-  infection_times = infect_time_fun(distance_mat_alphabeta, infectious, susceptible)
-  which_min = infection_times .== minimum(infection_times)
-  event_db[which_min,3] = maxtime_infectious + infection_times(which_min)
-end
-
-function recover_fun(event_db, time, gamma_inverse)
-"""
-Recover individuals following a geometric distribution with p = `gamma_inverse`
-"""
-  infectious = find_infectious_fun(event_db, time)
-  recovered = falses(length(infectious))
-  for i = 1:length(infectious)
-    recovered[i] = infectious[i] && (rand() < gamma_inverse)
+function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", time=maximum(event_db[:,3]), gamma=0)
+  """
+  Propagate infection through a population, default is for a discrete model.
+  Use of an SIR or SI model inferred from dimensions of `event_db` and
+  specifcation of a `gamma` > 0. Default time of previous time step is based
+  on the maximum infection time - which may not work well in discrete SIR
+  models especially
+  """
+  susceptible = find_state(event_db, time, "S", cd=cd)
+  infectious = find_state(event_db, time, "I", cd=cd)
+  if cd == "discrete"
+    infect_probs = fill(0, length(susceptible))
+    infect_probs[susceptible]=infection_probabilities(distance_mat_alphabeta, infectious, susceptible)
+    infected = fill(false, length(susceptible))
+    for i in 1:length(infect_probs)
+      infected[i] = rand() < infect_probs[i]
+    end
+    event_db[infected, 3] = time + 1
+    if gamma > 0 && size(event_db)[2] == 4
+      event_db[infected, 4] = (time + 2) .+ rand(Geometric(1/gamma), sum(infected))
+    end
   end
-  event_db[recovered, 4] = rep(time, sum(recovered))
+  if cd == "continuous"
+    infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
+    which_min = infect_times .== minimum(infect_times)
+    event_db[which_min,3] = time + infect_times[which_min]
+    if gamma > 0 && size(event_db)[2] == 4
+      event_db[which_min,4] = event_db[which_min,3] + rand(Exponential(1/gamma),1)
+    end
+  end
+  return event_db
 end
