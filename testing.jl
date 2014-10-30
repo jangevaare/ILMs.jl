@@ -13,6 +13,8 @@ edb = create_event_db(pop_db1, "SIR")
 
 intial_infect(edb, "continuous", 5)
 
+infect_recover(dist_mat_ab1, edb, cd="continuous", time=maximum(event_db[:,3]), gamma=5)
+
 recovery_times1 = find_recovery_times(edb, true)
 sa = susceptible_array_fun(edb, 10)
 ia = infectious_array_fun(edb, 10)

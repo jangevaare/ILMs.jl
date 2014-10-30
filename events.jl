@@ -23,7 +23,7 @@ function intial_infect(event_db, cd="discrete", gamma=0)
   """
   if gamma > 0 && size(event_db)[2] == 4
     if cd == "continuous"
-      recovery_dist = Exponential(1/gamma)
+      recovery_dist = Exponential(gamma)
     end
     if cd == "discrete"
       recovery_dist = Geometric(1/gamma)
@@ -133,8 +133,8 @@ function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", time=ma
   on the maximum infection time - which may not work well in discrete SIR
   models especially
   """
-  susceptible = find_state(event_db, time, "S", cd=cd)
-  infectious = find_state(event_db, time, "I", cd=cd)
+  susceptible = find_state(event_db, time, "S", cd)
+  infectious = find_state(event_db, time, "I", cd)
   if cd == "discrete"
     infect_probs = fill(0, length(susceptible))
     infect_probs[susceptible]=infection_probabilities(distance_mat_alphabeta, infectious, susceptible)
