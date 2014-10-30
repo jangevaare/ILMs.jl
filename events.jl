@@ -152,7 +152,7 @@ function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", time=ma
     which_min = infect_times .== minimum(infect_times)
     event_db[which_min,3] = time + infect_times[which_min]
     if gamma > 0 && size(event_db)[2] == 4
-      event_db[which_min,4] = event_db[which_min,3] + rand(Exponential(1/gamma),1)
+      event_db[which_min,4] = event_db[which_min,3] + rand(Exponential(gamma),1)
     end
   end
   return event_db
