@@ -6,10 +6,10 @@ function create_event_db(pop_db, ilm="SIR")
   0. Specify whether for an SI model or an SIR model.
   """
   if ilm == "SI"
-    return DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]))
+    return DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]))
   end
   if ilm == "SIR"
-    return DataFrame(ind_id = pop_db[:,1], s = zeros(size(pop_db)[1]), i = nans(size(pop_db)[1]), r = nans(size(pop_db)[1]))
+    return DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1]))
   end
 end
 
@@ -96,7 +96,7 @@ function find_recovery_times(event_db, narm=true)
   end
 end
 
-function dist_ab_matrix(distance_mat, alpha, beta)
+function dist_ab_mtx(distance_mat, alpha, beta)
   """
   Find the -alpha*(distance matrix^-beta)
   """
