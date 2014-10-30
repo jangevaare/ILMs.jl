@@ -5,7 +5,7 @@ function pop_db_fun(n, d)
   Generate a population of size `n` distributed spatially according to
   a bivariate distribution, `d`
   """
-  coordinates = rand(d, n)'
+  coordinates = rand(d, n)
   DataFrame(ind_id = 1:n, x = coordinates[:,1], y = coordinates[:,1])
 end
 
