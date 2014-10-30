@@ -64,5 +64,3 @@ SigmaF = cholfact(eye(3))
 end
 Mamba.describe(sim)
 plot(sim)
-
-
