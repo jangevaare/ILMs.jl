@@ -14,9 +14,9 @@ function distance_mat_fun(pop_db)
   Construct a matrix containing the euclidean distance between every
   pair of individuals contained in `pop_db`
   """
-  distance_mat = zeros(pop_db[end, :ind_id],pop_db[end, :ind_id])
-  for i = 1:pop_db[end,:ind_id]
-    for j = (i+1):pop_db[end, :ind_id]
+  distance_mat = fill(0, (pop_db[end, 1],pop_db[end, 1]))
+  for i = 1:pop_db[end,1]
+    for j = (i+1):pop_db[end, 1]
       distance_mat[j,i] = euclidean([pop_db[i, 2],pop_db[i, 3]], [pop_db[j, 2],pop_db[j, 3]])
     end
   end
