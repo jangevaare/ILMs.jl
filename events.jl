@@ -1,15 +1,20 @@
 using DataFrames, Distributions
 
+type edb
+  events::DataFrame
+  event_times::Vector
+end
+
 function create_event_db(pop_db, ilm="SIR")
   """
   Generate an event database, where all individuals are suscpetible at time
   0. Specify whether for an SI model or an SIR model.
   """
   if ilm == "SI"
-    return DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]))
+    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(NaN, size(pop_db)[1]))
   end
   if ilm == "SIR"
-    return DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1]))
+    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1])), fill(NaN, 2*(size(pop_db)[1])))
   end
 end
 
@@ -125,7 +130,7 @@ function infection_times(distance_mat_alphabeta, infectious, susceptible)
   infect_times
 end
 
-function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", time=maximum(event_db[:,3]), gamma=0)
+function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", event_timeline, time=maximum(event_db[:,3]), gamma=0)
   """
   Propagate infection through a population, default is for a discrete model.
   Use of an SIR or SI model inferred from dimensions of `event_db` and
@@ -148,11 +153,18 @@ function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", time=ma
     end
   end
   if cd == "continuous"
-    infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
-    which_min = infect_times .== minimum(infect_times)
-    event_db[which_min,3] = time + infect_times[which_min]
+    if gamma == 0 && size(event_db)[2] == 3
+      infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
+      which_min = infect_times .== minimum(infect_times)
+      event_db[which_min,3] = time + infect_times[which_min]
+    end
     if gamma > 0 && size(event_db)[2] == 4
-      event_db[which_min,4] = event_db[which_min,3] + rand(Exponential(gamma),1)
+      infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
+      which_min = infect_times .== minimum(infect_times)
+      if find_state(event_db, time, "I", "continuous") == find_state(event_db, (time + infect_times[which_min]), "I", "continuous")
+        event_db[which_min,3] = time + infect_times[which_min]
+        event_db[which_min,4] = event_db[which_min,3] + rand(Exponential(gamma),1)
+      end
     end
   end
   return event_db
