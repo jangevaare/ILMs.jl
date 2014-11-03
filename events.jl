@@ -119,7 +119,7 @@ function infection_probabilities(distance_mat_alphabeta, infectious, susceptible
   """
   Determine infection probabilities for all susceptible individuals
   """
-  1 .- exp(-sum(distance_mat_alphabeta[susceptible, infectious], 2))
+  return 1 .- exp(-sum(distance_mat_alphabeta[susceptible, infectious], 2))
 end
 
 function infection_times(distance_mat_alphabeta, infectious, susceptible)
@@ -134,7 +134,7 @@ function infection_times(distance_mat_alphabeta, infectious, susceptible)
   for i = 1:length(susceptible)
     infect_times[i]= rand(Exponential(exponential_rate[i]))
   end
-  infect_times
+  return infect_times
 end
 
 function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", event_timeline, time=maximum(event_db[:,3]), gamma=0)
@@ -155,24 +155,38 @@ function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", event_t
       infected[i] = rand() < infect_probs[i]
     end
     event_db[infected, 3] = time + 1
-    if gamma > 0 && size(event_db)[2] == 4
-      event_db[infected, 4] = (time + 2) .+ rand(Geometric(1/gamma), sum(infected))
-    end
-  end
-  if cd == "continuous"
-    if gamma == 0 && size(event_db)[2] == 3
-      infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
-      which_min = infect_times .== minimum(infect_times)
-      event_db[which_min,3] = time + infect_times[which_min]
-    end
-    if gamma > 0 && size(event_db)[2] == 4
-      infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
-      which_min = infect_times .== minimum(infect_times)
-      if find_state(event_db, time, "I", "continuous") == find_state(event_db, (time + infect_times[which_min]), "I", "continuous")
-        event_db[which_min,3] = time + infect_times[which_min]
-        event_db[which_min,4] = event_db[which_min,3] + rand(Exponential(gamma),1)
+    if gamma > 0 && size(event_db.events)[2] == 4
+      recovery_times = rand(Geometric(1/gamma), sum(infected))
+      event_db.events[infected, 4] = (time + 2) .+ recovery_times
+      for i = 1:sum(infected)
+        event_time_update(time+1, event_db)
+        event_time_update(time+2+recovery_times[i], event_db)
       end
     end
   end
-  return event_db
+  if cd == "continuous"
+    if gamma == 0 && size(event_db.events)[2] == 3
+      infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
+      which_min = infect_times .== minimum(infect_times)
+      event_db.events[which_min,3] = time + infect_times[which_min]
+      event_time_update(time + infect_times[which_min], event_db)
+    end
+    if gamma > 0 && size(event_db)[2] == 4
+      infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
+      which_min = infect_times .== minimum(infect_times)
+      while (time .< event_db.event_times) != (time + infect_times[which_min] .< event_db.event_times)
+        time = event_db.event_times[time .< event_db.event_times][1]
+        susceptible = find_state(event_db, time, "S", "continuous")
+        infectious = find_state(event_db, time, "I", "continuous")
+        infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
+        which_min = infect_times .== minimum(infect_times)
+      end
+      event_db.events[which_min,3] = time + infect_times[which_min]
+      recovery_time = rand(Exponential(gamma),1)
+      event_db.events[which_min,4] = event_db.events[which_min,3] + recovery_time
+      event_time_update(time + infect_times[which_min], event_db)
+      event_time_update(recovery_time, event_db)
+      end
+    end
+  end
 end
