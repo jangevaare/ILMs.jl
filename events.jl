@@ -11,11 +11,20 @@ function create_event_db(pop_db, ilm="SIR")
   0. Specify whether for an SI model or an SIR model.
   """
   if ilm == "SI"
-    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(NaN, size(pop_db)[1]))
+    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(Inf, size(pop_db)[1]))
   end
   if ilm == "SIR"
-    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1])), fill(NaN, 2*(size(pop_db)[1])))
+    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1])), fill(Inf, 2*(size(pop_db)[1])))
   end
+end
+
+function event_time_update(eventtime, event_db)
+  """
+  Update the ordered sequence of event times based on a new event at
+  `time`
+  """
+  maxevents=length(event_db.event_times)
+  event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime .>= event_db.event_times]], eventtime, event_db.event_times[(1:(maxevents-1))[eventtime .< (event_db.event_times[1:(maxevents-1)])]]]
 end
 
 function intial_infect(event_db, cd="discrete", gamma=0)
@@ -26,20 +35,20 @@ function intial_infect(event_db, cd="discrete", gamma=0)
   recovery time functions. If `gamma` (the mean recovery time) is > 0, then
   a recovery for this infection will also be probabilistically generated.
   """
-  if gamma > 0 && size(event_db)[2] == 4
+  chosen_one=sample(event_db.events[:,1], 1)
+  event_db.events[chosen_one, 3] = 1.0
+  event_time_update(1.0, event_db)
+  if gamma > 0 && size(event_db.events)[2] == 4
     if cd == "continuous"
       recovery_dist = Exponential(gamma)
     end
     if cd == "discrete"
       recovery_dist = Geometric(1/gamma)
     end
-    chosen_one=sample(event_db[:,1], 1)
-    event_db[chosen_one, 3] = 1.0
-    event_db[chosen_one, 4] = 1.0 + rand(recovery_dist, 1)
-  else
-    event_db[sample(event_db[:,1], 1), 3] = 1.0
+    recovery_time = 1.0 + rand(recovery_dist, 1)
+    event_db.events[chosen_one, 4] = recovery_time
+    event_time_update(recovery_time, event_db)
   end
-  return event_db
 end
 
 function find_state(event_db, time, state, cd="discrete")
