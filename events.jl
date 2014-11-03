@@ -1,5 +1,3 @@
-using DataFrames, Distributions
-
 type edb
   events::DataFrame
   event_times::Vector
@@ -56,40 +54,40 @@ function find_state(event_db, time, state, cd="discrete")
   Find the individuals falling into `state` (S, I, or R), at `time` from
   a continuous or discrete ILM
   """
-  state_index = fill(false, size(event_db)[1])
+  state_index = fill(false, size(event_db.events)[1])
   if state == "S"
     if cd == "discrete"
       for i = 1:length(state_index)
-        state_index[i] = isnan(event_db[i,3]) || event_db[i,3] >= time
+        state_index[i] = isnan(event_db.events[i,3]) || event_db.events[i,3] >= time
       end
     end
     if cd == "continuous"
       for i = 1:length(state_index)
-        state_index[i] = isnan(event_db[i,3]) || event_db[i,3] > time
+        state_index[i] = isnan(event_db.events[i,3]) || event_db.events[i,3] > time
       end
     end
   end
   if state == "I"
     if cd == "discrete"
       for i = 1:length(state_index)
-        state_index[i] = event_db[i,3] < time && ((isnan(event_db[i,4])) || (time <= event_db[i,4]))
+        state_index[i] = event_db.events[i,3] < time && ((isnan(event_db.events[i,4])) || (time <= event_db.events[i,4]))
       end
     end
     if cd == "continuous"
       for i = 1:length(state_index)
-        state_index[i] = event_db[i,3] <= time && ((isnan(event_db[i,4])) || (time < event_db[i,4]))
+        state_index[i] = event_db.events[i,3] <= time && ((isnan(event_db.events[i,4])) || (time < event_db.events[i,4]))
       end
     end
   end
   if state == "R"
     if cd == "discrete"
       for i = 1:length(state_index)
-        state_index[i] = event_db[i,4] < time
+        state_index[i] = event_db.events[i,4] < time
       end
     end
     if cd == "continuous"
       for i = 1:length(state_index)
-        state_index[i] = event_db[i,4] <= time
+        state_index[i] = event_db.events[i,4] <= time
       end
     end
   end
@@ -101,9 +99,9 @@ function find_recovery_times(event_db, narm=true)
   Determine recovery times for individuals
   """
   if narm == false
-    return event_db[:,4]  - event_db[:,3]
+    return event_db.events[:,4]  - event_db.events[:,3]
   elseif narm == true
-    times = event_db[:,4]  - event_db[:,3]
+    times = event_db.events[:,4]  - event_db.events[:,3]
     return times[isnan(times).==false]
   else
     error("narm (2nd argument) must be boolean")

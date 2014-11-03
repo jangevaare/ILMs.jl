@@ -7,20 +7,21 @@ include("events.jl")
 
 pop_db1 = create_pop_db(50, MvNormal(eye(2).*2))
 dist_mat1 = create_dist_mtx(pop_db1)
+evdb = create_event_db(pop_db1, "SIR")
+intial_infect(evdb, "continuous", 5)
 dist_mat_ab1 = dist_ab_mtx(dist_mat1, 1, 15)
 
-evdb = create_event_db(pop_db1, "SIR")
+infect_recover(dist_mat_ab1, evdb, cd="continuous", time=maximum(event_db[:,3]), gamma=5)
 
-evdb.event_times
-
-intial_infect(edb, "continuous", 5)
-
-infect_recover(dist_mat_ab1, edb, cd="continuous", time=maximum(event_db[:,3]), gamma=5)
 
 testedb=edb(DataFrame(a=[1,2,3], b=[3,4,5]), [0,1,2])
 typeof(testedb)
 
 testedb.event_times
+
+
+dist_mat_ab1 = dist_ab_mtx(dist_mat1, 1, 15)
+
 
 
 recovery_times1 = find_recovery_times(edb, true)
