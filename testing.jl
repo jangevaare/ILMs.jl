@@ -1,5 +1,4 @@
-include("population.jl")
-include("events.jl")
+include("ilmtools.jl")
 
 #include("inference.jl")
 #using Distributions, PDMats, Mamba

@@ -1,5 +1,3 @@
-using DataFrames, Distances, Distributions
-
 function create_pop_db(n, d)
   """
   Generate a population of size `n` distributed spatially according to
