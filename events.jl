@@ -137,7 +137,7 @@ function infection_times(distance_mat_alphabeta, infectious, susceptible)
   return infect_times
 end
 
-function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", event_timeline, time=maximum(event_db[:,3]), gamma=0)
+function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", time=maximum(event_db[:,3]), gamma=0)
   """
   Propagate infection through a population, default is for a discrete model.
   Use of an SIR or SI model inferred from dimensions of `event_db` and
@@ -186,7 +186,6 @@ function infect_recover(distance_mat_alphabeta, event_db, cd="discrete", event_t
       event_db.events[which_min,4] = event_db.events[which_min,3] + recovery_time
       event_time_update(time + infect_times[which_min], event_db)
       event_time_update(recovery_time, event_db)
-      end
     end
   end
 end
