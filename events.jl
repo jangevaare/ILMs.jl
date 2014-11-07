@@ -201,14 +201,14 @@ function infect_recover_loop(distance_mat_alphabeta, event_db, cd="discrete", ga
   if cd == "discrete"
     if gamma == 0 && size(event_db.events)[2] == 3
       time = 1.0
-      while sum(find_state(event_db, time, "S", cd)) > 0
+      while sum(find_state(event_db, time, "S", cd)) > 0 && time < Inf
         infect_recover(distance_mat_alphabeta, event_db, time, "discrete", 0)
         time = time + 1.0
       end
     end
     if gamma > 0 && size(event_db.events)[2] == 4
       time = 1.0
-      while sum(find_state(event_db, time, "I", cd)) > 0
+      while sum(find_state(event_db, time, "I", cd)) > 0 && time < Inf
         infect_recover(distance_mat_alphabeta, event_db, time, "discrete", gamma)
         time = time + 1.0
       end
@@ -217,14 +217,14 @@ function infect_recover_loop(distance_mat_alphabeta, event_db, cd="discrete", ga
   if cd == "continuous"
         if gamma == 0 && size(event_db.events)[2] == 3
       time = 1.0
-      while sum(find_state(event_db, time, "S", cd)) > 0
+      while sum(find_state(event_db, time, "S", cd)) > 0 && time < Inf
         infect_recover(distance_mat_alphabeta, event_db, time, "continuous", 0)
         time = maximum(event_db.events[:,3])
       end
     end
     if gamma > 0 && size(event_db.events)[2] == 4
       time = 1.0
-      while sum(find_state(event_db, time, "I", cd)) > 0
+      while sum(find_state(event_db, time, "I", cd)) > 0 && time < Inf
         infect_recover(distance_mat_alphabeta, event_db, time, "continuous", gamma)
         time = maximum(event_db.events[:,3]) 
       end
