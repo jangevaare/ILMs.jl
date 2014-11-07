@@ -25,7 +25,7 @@ function event_time_update(eventtime, event_db)
   event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime .>= event_db.event_times]], eventtime, event_db.event_times[(1:(maxevents-1))[eventtime .< (event_db.event_times[1:(maxevents-1)])]]]
 end
 
-function intial_infect(event_db, cd="discrete", gamma=0)
+function initial_infect(event_db, cd="discrete", gamma=0)
   """
   Randomly infect 1 individual at time = 1.0, A random infection is required
   at the beginning of all simulations. Specify whether ILM is continuous
@@ -192,9 +192,10 @@ end
 
 function infect_recover_loop(distance_mat_alphabeta, event_db, cd="discrete", gamma=0)
   """
-  Function to loop infect_recover function as appropriate for continuous
-  and discrete SI and SIR models
+  Function to generate initial infection then loop infect_recover function as appropriate 
+  for continuous and discrete SI and SIR models
   """
+  initial_infect(event_db, cd, gamma)
   if cd == "discrete"
     if gamma == 0 && size(event_db.events)[2] == 3
       time = 1.0
