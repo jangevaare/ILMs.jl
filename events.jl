@@ -132,7 +132,9 @@ function infection_times(distance_mat_alphabeta, infectious, susceptible)
   exponential_rate[susceptible] = sum(distance_mat_alphabeta[susceptible, infectious], 2)
   infect_times = fill(Inf, length(susceptible))
   for i = 1:length(susceptible)
-    infect_times[i]= rand(Exponential(exponential_rate[i]))
+    if exponential_rate[i] > 0 
+      infect_times[i]= rand(Exponential(exponential_rate[i]))
+    end
   end
   return infect_times
 end
