@@ -1,18 +1,19 @@
 type edb
   events::DataFrame
   event_times::Vector
+  cd::ASCIIString
 end
 
-function create_event_db(pop_db, ilm="SIR")
+function create_event_db(pop_db, ilm="SIR", cd="discrete")
   """
   Generate an event database, where all individuals are suscpetible at time
   0. Specify whether for an SI model or an SIR model.
   """
   if ilm == "SI"
-    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(Inf, size(pop_db)[1]))
+    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(Inf, size(pop_db)[1]), cd)
   end
   if ilm == "SIR"
-    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1])), fill(Inf, 2*(size(pop_db)[1])))
+    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1])), fill(Inf, 2*(size(pop_db)[1])), cd)
   end
 end
 
@@ -25,7 +26,7 @@ function event_time_update(eventtime, event_db)
   event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime .>= event_db.event_times]], eventtime, event_db.event_times[(1:(maxevents-1))[eventtime .< (event_db.event_times[1:(maxevents-1)])]]]
 end
 
-function initial_infect(event_db, cd="discrete", gamma=0)
+function initial_infect(event_db, gamma=0)
   """
   Randomly infect 1 individual at time = 1.0, A random infection is required
   at the beginning of all simulations. Specify whether ILM is continuous
@@ -37,10 +38,10 @@ function initial_infect(event_db, cd="discrete", gamma=0)
   event_db.events[chosen_one, 3] = 1.0
   event_time_update(1.0, event_db)
   if gamma > 0 && size(event_db.events)[2] == 4
-    if cd == "continuous"
+    if event_db.cd == "continuous"
       recovery_dist = Exponential(gamma)
     end
-    if cd == "discrete"
+    if event_db.cd == "discrete"
       recovery_dist = Geometric(1/gamma)
     end
     recovery_time = 1.0 + rand(recovery_dist, 1)
@@ -49,43 +50,43 @@ function initial_infect(event_db, cd="discrete", gamma=0)
   end
 end
 
-function find_state(event_db, time, state, cd="discrete")
+function find_state(event_db, time, state)
   """
   Find the individuals falling into `state` (S, I, or R), at `time` from
   a continuous or discrete ILM
   """
   state_index = fill(false, size(event_db.events)[1])
   if state == "S"
-    if cd == "discrete"
+    if event_db.cd == "discrete"
       for i = 1:length(state_index)
         state_index[i] = isnan(event_db.events[i,3]) || event_db.events[i,3] >= time
       end
     end
-    if cd == "continuous"
+    if event_db.cd == "continuous"
       for i = 1:length(state_index)
         state_index[i] = isnan(event_db.events[i,3]) || event_db.events[i,3] > time
       end
     end
   end
   if state == "I"
-    if cd == "discrete"
+    if event_db.cd == "discrete"
       for i = 1:length(state_index)
         state_index[i] = event_db.events[i,3] < time && ((isnan(event_db.events[i,4])) || (time <= event_db.events[i,4]))
       end
     end
-    if cd == "continuous"
+    if event_db.cd == "continuous"
       for i = 1:length(state_index)
         state_index[i] = event_db.events[i,3] <= time && ((isnan(event_db.events[i,4])) || (time < event_db.events[i,4]))
       end
     end
   end
   if state == "R"
-    if cd == "discrete"
+    if event_db.cd == "discrete"
       for i = 1:length(state_index)
         state_index[i] = event_db.events[i,4] < time
       end
     end
-    if cd == "continuous"
+    if event_db.cd == "continuous"
       for i = 1:length(state_index)
         state_index[i] = event_db.events[i,4] <= time
       end
@@ -139,7 +140,7 @@ function infection_times(distance_mat_alphabeta, infectious, susceptible)
   return infect_times
 end
 
-function infect_recover(distance_mat_alphabeta, event_db, time=1.0, cd="discrete", gamma=0)
+function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=0)
   """
   Propagate infection through a population, default is for a discrete model.
   Use of an SIR or SI model inferred from dimensions of `event_db` and
@@ -147,9 +148,9 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, cd="discrete
   on the maximum infection time - which may not work well in discrete SIR
   models especially
   """
-  susceptible = find_state(event_db, time, "S", cd)
-  infectious = find_state(event_db, time, "I", cd)
-  if cd == "discrete"
+  susceptible = find_state(event_db, time, "S")
+  infectious = find_state(event_db, time, "I")
+  if event_db.cd == "discrete"
     infect_probs = fill(0, length(susceptible))
     infect_probs[susceptible]=infection_probabilities(distance_mat_alphabeta, infectious, susceptible)
     infected = fill(false, length(susceptible))
@@ -166,7 +167,7 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, cd="discrete
       end
     end
   end
-  if cd == "continuous"
+  if event_db.cd == "continuous"
     if gamma == 0 && size(event_db.events)[2] == 3
       infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
       which_min = infect_times .== minimum(infect_times)
@@ -178,8 +179,8 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, cd="discrete
       which_min = infect_times .== minimum(infect_times)
       while (time .< event_db.event_times) != (time + infect_times[which_min] .< event_db.event_times)
         time = event_db.event_times[time .< event_db.event_times][1]
-        susceptible = find_state(event_db, time, "S", "continuous")
-        infectious = find_state(event_db, time, "I", "continuous")
+        susceptible = find_state(event_db, time, "S")
+        infectious = find_state(event_db, time, "I")
         infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
         if minimum(infect_times) == Inf
           break
@@ -195,40 +196,40 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, cd="discrete
   end
 end
 
-function infect_recover_loop(distance_mat_alphabeta, event_db, cd="discrete", gamma=0)
+function infect_recover_loop(distance_mat_alphabeta, event_db, gamma=0)
   """
   Function to generate initial infection then loop infect_recover function as appropriate 
   for continuous and discrete SI and SIR models
   """
-  initial_infect(event_db, cd, gamma)
-  if cd == "discrete"
+  initial_infect(event_db, gamma)
+  if event_db.cd == "discrete"
     if gamma == 0 && size(event_db.events)[2] == 3
       time = 1.0
-      while sum(find_state(event_db, time, "S", cd)) > 0
-        infect_recover(distance_mat_alphabeta, event_db, time, "discrete", 0)
+      while sum(find_state(event_db, time, "S")) > 0
+        infect_recover(distance_mat_alphabeta, event_db, time, 0)
         time = time + 1.0
       end
     end
     if gamma > 0 && size(event_db.events)[2] == 4
       time = 1.0
-      while sum(find_state(event_db, time, "I", cd)) > 0
-        infect_recover(distance_mat_alphabeta, event_db, time, "discrete", gamma)
+      while sum(find_state(event_db, time, "I")) > 0
+        infect_recover(distance_mat_alphabeta, event_db, time, gamma)
         time = time + 1.0
       end
     end
   end
-  if cd == "continuous"
+  if event_db.cd == "continuous"
         if gamma == 0 && size(event_db.events)[2] == 3
       time = 1.0
-      while sum(find_state(event_db, time, "S", cd)) > 0 && time < Inf
-        infect_recover(distance_mat_alphabeta, event_db, time, "continuous", 0)
+      while sum(find_state(event_db, time, "S")) > 0 && time < Inf
+        infect_recover(distance_mat_alphabeta, event_db, time, 0)
         time = maximum(event_db.events[:,3])
       end
     end
     if gamma > 0 && size(event_db.events)[2] == 4
       time = 1.0
-      while sum(find_state(event_db, time, "I", cd)) > 0 && time < Inf
-        infect_recover(distance_mat_alphabeta, event_db, time, "continuous", gamma)
+      while sum(find_state(event_db, time, "I")) > 0 && time < Inf
+        infect_recover(distance_mat_alphabeta, event_db, time, gamma)
         if time == maximum(event_db.events[:,3])
           break
         end
