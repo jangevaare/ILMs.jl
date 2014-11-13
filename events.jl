@@ -196,11 +196,13 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=0)
   end
 end
 
-function infect_recover_loop(distance_mat_alphabeta, event_db, gamma=0)
+function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, gamma=0)
   """
   Function to generate initial infection then loop infect_recover function as appropriate 
   for continuous and discrete SI and SIR models
   """
+  distance_mat_alphabeta = dist_ab_mtx(create_dist_mtx(pop_db), alpha, beta)
+  event_db = create_event_db(pop_db, ilm, cd)
   initial_infect(event_db, gamma)
   if event_db.cd == "discrete"
     if gamma == 0 && size(event_db.events)[2] == 3
@@ -237,4 +239,5 @@ function infect_recover_loop(distance_mat_alphabeta, event_db, gamma=0)
       end
     end
   end
+  return event_db
 end
