@@ -7,6 +7,7 @@ dist_mat_ab1 = dist_ab_mtx(dist_mat1, 1, 15)
 evdb = create_event_db(pop_db1, "SIR")
 infect_recover_loop(dist_mat_ab1, evdb, "continuous", 5)
 
+evseries = state_timeseries(evdb, "continuous")
 
 
 recovery_times1 = find_recovery_times(edb, true)
