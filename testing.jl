@@ -4,10 +4,17 @@ include("ilmtools.jl")
 pop_db1 = create_pop_db(50, MvNormal(eye(2).*2))
 dist_mat1 = create_dist_mtx(pop_db1)
 dist_mat_ab1 = dist_ab_mtx(dist_mat1, 1, 15)
-evdb = create_event_db(pop_db1, "SIR")
-infect_recover_loop(dist_mat_ab1, evdb, "continuous", 5)
 
-evseries = state_timeseries(evdb, "continuous")
+evdb = create_event_db(pop_db1, "SIR", "continuous")
+
+infect_recover_loop(dist_mat_ab1, evdb, 5)
+
+evseries = state_timeseries(evdb)
+
+
+draw(PNG("Susceptible_plot.png", 6inch, 3inch), plot(evseries, x="time", y="S", Geom.line))
+draw(PNG("Infection_plot.png", 6inch, 3inch), plot(evseries, x="time", y="I", Geom.line))
+draw(PNG("Recovered_plot.png", 6inch, 3inch), plot(evseries, x="time", y="R", Geom.line))
 
 
 recovery_times1 = find_recovery_times(edb, true)
