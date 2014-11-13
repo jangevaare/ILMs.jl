@@ -1,4 +1,4 @@
-using DataFrames, Distances, Distributions
+using DataFrames, Distances, Distributions, Gadfly
 include("population.jl")
 include("events.jl")
 include("visuals.jl")
