@@ -4,7 +4,7 @@ function create_pop_db(n, d)
   a bivariate distribution, `d`
   """
   coordinates = rand(d, n)'
-  DataFrame(ind_id = 1:n, x = coordinates[:,1], y = coordinates[:,1])
+  DataFrame(ind_id = 1:n, x = coordinates[:,1], y = coordinates[:,2])
 end
 
 function create_dist_mtx(pop_db)
