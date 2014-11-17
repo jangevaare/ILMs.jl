@@ -69,14 +69,28 @@ function find_state(event_db, time, state)
     end
   end
   if state == "I"
-    if event_db.cd == "discrete"
-      for i = 1:length(state_index)
-        state_index[i] = event_db.events[i,3] < time && ((isnan(event_db.events[i,4])) || (time <= event_db.events[i,4]))
+    if size(event_db.events)[2] == 4
+      if event_db.cd == "discrete"
+        for i = 1:length(state_index)
+          state_index[i] = event_db.events[i,3] < time && ((isnan(event_db.events[i,4])) || (time <= event_db.events[i,4]))
+        end
+      end
+      if event_db.cd == "continuous"
+        for i = 1:length(state_index)
+          state_index[i] = event_db.events[i,3] <= time && ((isnan(event_db.events[i,4])) || (time < event_db.events[i,4]))
+        end
       end
     end
-    if event_db.cd == "continuous"
-      for i = 1:length(state_index)
-        state_index[i] = event_db.events[i,3] <= time && ((isnan(event_db.events[i,4])) || (time < event_db.events[i,4]))
+    if size(event_db.events)[2] == 3
+      if event_db.cd == "discrete"
+        for i = 1:length(state_index)
+          state_index[i] = event_db.events[i,3] < time
+        end
+      end
+      if event_db.cd == "continuous"
+        for i = 1:length(state_index)
+          state_index[i] = event_db.events[i,3] <= time
+        end
       end
     end
   end
@@ -111,7 +125,7 @@ end
 
 function dist_ab_mtx(distance_mat, alpha, beta)
   """
-  Find the -alpha*(distance matrix^-beta)
+  Find the alpha*(distance matrix^-beta)
   """
   return alpha .* (distance_mat .^ -beta)
 end
@@ -130,10 +144,10 @@ function infection_times(distance_mat_alphabeta, infectious, susceptible)
   infected individual, remaining times will need to be recalculated
   """
   exponential_rate = fill(Inf, length(susceptible))
-  exponential_rate[susceptible] = sum(distance_mat_alphabeta[susceptible, infectious], 2)
+  exponential_rate[susceptible] = sum(distance_mat_alphabeta[susceptible, infectious], 2).^-1.0
   infect_times = fill(Inf, length(susceptible))
   for i = 1:length(susceptible)
-    if exponential_rate[i] > 0 
+    if 0 < exponential_rate[i] < Inf 
       infect_times[i]= rand(Exponential(exponential_rate[i]))
     end
   end
@@ -177,7 +191,7 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
       infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
       which_min = infect_times .== minimum(infect_times)
-      while (time .< event_db.event_times) != (time + infect_times[which_min] .< event_db.event_times)
+      while (time .< event_db.event_times) != ((time + infect_times[which_min]) .< event_db.event_times)
         time = event_db.event_times[time .< event_db.event_times][1]
         susceptible = find_state(event_db, time, "S")
         infectious = find_state(event_db, time, "I")
@@ -186,6 +200,9 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
           break
         end
         which_min = infect_times .== minimum(infect_times)
+      end
+      if minimum(infect_times) == Inf
+        break
       end
       event_db.events[which_min,3] = (time + infect_times[which_min])
       recovery_time = rand(Exponential(gamma),1)
@@ -204,16 +221,15 @@ function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, g
   distance_mat_alphabeta = dist_ab_mtx(create_dist_mtx(pop_db), alpha, beta)
   event_db = create_event_db(pop_db, cd, gamma)
   initial_infect(event_db, gamma)
+  time=1.0
   if event_db.cd == "discrete"
     if gamma == Inf && size(event_db.events)[2] == 3
-      time = 1.0
       while sum(find_state(event_db, time, "S")) > 0
-        infect_recover(distance_mat_alphabeta, event_db, time, 0)
+        infect_recover(distance_mat_alphabeta, event_db, time, Inf)
         time = time + 1.0
       end
     end
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
-      time = 1.0
       while sum(find_state(event_db, time, "I")) > 0
         infect_recover(distance_mat_alphabeta, event_db, time, gamma)
         time = time + 1.0
@@ -221,15 +237,13 @@ function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, g
     end
   end
   if event_db.cd == "continuous"
-        if gamma == Inf && size(event_db.events)[2] == 3
-      time = 1.0
+    if gamma == Inf && size(event_db.events)[2] == 3
       while sum(find_state(event_db, time, "S")) > 0 && time < Inf
-        infect_recover(distance_mat_alphabeta, event_db, time, 0)
+        infect_recover(distance_mat_alphabeta, event_db, time, Inf)
         time = maximum(event_db.events[:,3])
       end
     end
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
-      time = 1.0
       while sum(find_state(event_db, time, "I")) > 0 && time < Inf
         infect_recover(distance_mat_alphabeta, event_db, time, gamma)
         if time == maximum(event_db.events[:,3])

@@ -34,5 +34,5 @@ function spatial_states(pop_db, event_db, time)
     if size(event_db.events)[2] == 4
         state[find_state(event_db, time, "R")] = "R"
     end
-    return DataFrame(x=pop_db[:,:x], y=pop_db[:,:y], state=state)
+    return DataFrame(x=pop_db[:,2], y=pop_db[:,3], state=state)
 end
