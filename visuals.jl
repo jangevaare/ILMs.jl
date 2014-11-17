@@ -30,9 +30,22 @@ function spatial_states(pop_db, event_db, time)
     """
     i = find_state(event_db, time, "I")
     state = fill("S", length(i))
+    #state_num = fill(1, length(i))
     state[i] = "I"
+    #state_num[i] = 2
     if size(event_db.events)[2] == 4
         state[find_state(event_db, time, "R")] = "R"
+        #state_num[find_state(event_db, time, "R")] = 3
     end
-    return DataFrame(x=pop_db[:,2], y=pop_db[:,3], state=state)
+    return append!(DataFrame(x=fill(NaN, 3), y=fill(NaN, 3), state=["S", "I", "R"]), DataFrame(x=pop_db[:,2], y=pop_db[:,3], state=state))
+    #return sort!(DataFrame(x=pop_db[:,2], y=pop_db[:,3], state=state, state_num=state_num), cols=:state_num)
+end
+
+function state_animation(framewindow, event_db, pop_db)
+    """
+    Make a spatial animation/slider in ijulia
+    """
+    @manipulate for time = 1:framewindow:ceil(maximum(event_db.event_times[event_db.event_times .< Inf]))
+        plot(spatial_states(pop_db, event_db, time), x="x", y="y", Geom.point, color="state", Scale.discrete_color_manual("black", "orange", "blue"))
+    end
 end

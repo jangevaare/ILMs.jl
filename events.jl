@@ -201,14 +201,13 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
         end
         which_min = infect_times .== minimum(infect_times)
       end
-      if minimum(infect_times) == Inf
-        break
-      end
+      if minimum(infect_times) != Inf
       event_db.events[which_min,3] = (time + infect_times[which_min])
       recovery_time = rand(Exponential(gamma),1)
       event_db.events[which_min,4] = event_db.events[which_min,3] + recovery_time
       event_time_update(time + infect_times[which_min], event_db)
       event_time_update(time + infect_times[which_min]+recovery_time, event_db)
+      end
     end
   end
 end
