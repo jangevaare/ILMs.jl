@@ -23,7 +23,9 @@ function event_time_update(eventtime, event_db)
   `time`
   """
   maxevents=length(event_db.event_times)
-  event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime .>= event_db.event_times]], eventtime, event_db.event_times[(1:(maxevents-1))[eventtime .< (event_db.event_times[1:(maxevents-1)])]]]
+  for i = 1:length(eventtime)
+    event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime[i] .>= event_db.event_times]], eventtime[i], event_db.event_times[(1:(maxevents-1))[eventtime[i] .< (event_db.event_times[1:(maxevents-1)])]]]
+  end
 end
 
 function initial_infect(event_db, gamma=Inf)
@@ -191,7 +193,10 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
       infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
       which_min = infect_times .== minimum(infect_times)
-      while (time .< event_db.event_times) != ((time + infect_times[which_min]) .< event_db.event_times)
+      if sum(which_min) > 1
+        warning("Simultaneous infections...")
+      end
+      while (time .< event_db.event_times) != ((time + infect_times[which_min][1]) .< event_db.event_times)
         time = event_db.event_times[time .< event_db.event_times][1]
         susceptible = find_state(event_db, time, "S")
         infectious = find_state(event_db, time, "I")
@@ -202,11 +207,11 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
         which_min = infect_times .== minimum(infect_times)
       end
       if minimum(infect_times) != Inf
-      event_db.events[which_min,3] = (time + infect_times[which_min])
-      recovery_time = rand(Exponential(gamma),1)
-      event_db.events[which_min,4] = event_db.events[which_min,3] + recovery_time
-      event_time_update(time + infect_times[which_min], event_db)
-      event_time_update(time + infect_times[which_min]+recovery_time, event_db)
+        event_db.events[which_min,3] = (time + infect_times[which_min])
+        recovery_time = rand(Exponential(gamma),sum(which_min))
+        event_db.events[which_min,4] = event_db.events[which_min,3] + recovery_time
+        event_time_update(time + infect_times[which_min], event_db)
+        event_time_update(time + infect_times[which_min] + recovery_time, event_db)
       end
     end
   end

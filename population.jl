@@ -1,10 +1,18 @@
-function create_pop_db(n, d)
+function create_pop_db_bivariate(n, d)
   """
   Generate a population of size `n` distributed spatially according to
   a bivariate distribution, `d`
   """
   coordinates = rand(d, n)'
   DataFrame(ind_id = 1:n, x = coordinates[:,1], y = coordinates[:,2])
+end
+
+function create_pop_db_univariates(n, d1, d2)
+  """
+  Generate a population of size `n` distributed spatially according to
+  a univariate distributions, `d1` and `d2`
+  """
+  DataFrame(ind_id = 1:n, x = rand(d1, n), y = rand(d2, n))
 end
 
 function create_dist_mtx(pop_db)
