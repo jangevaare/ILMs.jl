@@ -193,7 +193,7 @@ function infect_recover(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
       infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
       which_min = infect_times .== minimum(infect_times)
-      while (time .<= event_db.event_times) != ((time + infect_times[which_min][1]) .<= event_db.event_times)
+      while (time .< event_db.event_times) != ((time + infect_times[which_min][1]) .<= event_db.event_times)
         time = event_db.event_times[time .< event_db.event_times][1]
         susceptible = find_state(event_db, time, "S")
         infectious = find_state(event_db, time, "I")
