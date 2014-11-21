@@ -38,7 +38,7 @@ function initial_infect!(event_db, gamma=Inf)
   """
   chosen_one=sample(event_db.events[:,1], 1)
   event_db.events[chosen_one, 3] = 1.0
-  event_time_update(1.0, event_db)
+  event_time_update!(1.0, event_db)
   if 0 < gamma < Inf && size(event_db.events)[2] == 4
     if event_db.cd == "continuous"
       recovery_dist = Exponential(gamma)
@@ -48,7 +48,7 @@ function initial_infect!(event_db, gamma=Inf)
     end
     recovery_time = 1.0 + rand(recovery_dist, 1)
     event_db.events[chosen_one, 4] = recovery_time
-    event_time_update(recovery_time, event_db)
+    event_time_update!(recovery_time, event_db)
   end
 end
 
