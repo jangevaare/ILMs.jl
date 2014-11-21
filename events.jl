@@ -176,11 +176,9 @@ function infect_recover!(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
     event_db[infected, 3] = time + 1
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
       recovery_times = rand(Geometric(1/gamma), sum(infected))
-      event_db.events[infected, 4] = (time + 2) .+ recovery_times
-      for i = 1:sum(infected)
-        event_time_update!(time+1, event_db)
-        event_time_update!(time+2+recovery_times[i], event_db)
-      end
+      event_db.events[infected, 4] = (time + 2) + recovery_times
+      event_time_update!(fill(time+1,sum(infected)) event_db)
+      event_time_update!(time+2+recovery_times, event_db)
     end
   end
   if event_db.cd == "continuous"
