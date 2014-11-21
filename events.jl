@@ -17,14 +17,16 @@ function create_event_db(pop_db, cd="discrete", gamma=Inf)
   end
 end
 
-function event_time_update!(eventtime, event_db)
+function event_time_update!(eventtime::float, event_db::edb)
   """
   Update the ordered sequence of event times based on a new event at
   `time`
   """
   maxevents=length(event_db.event_times)
-  for i = 1:length(eventtime)
-    event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime[i] .>= event_db.event_times]], eventtime[i], event_db.event_times[(1:(maxevents-1))[eventtime[i] .< (event_db.event_times[1:(maxevents-1)])]]]
+  if length(eventtime) > 0
+    for i = 1:length(eventtime)
+      event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime[i] .>= event_db.event_times]], eventtime[i], event_db.event_times[(1:(maxevents-1))[eventtime[i] .< (event_db.event_times[1:(maxevents-1)])]]]
+    end
   end
 end
 
@@ -52,7 +54,7 @@ function initial_infect!(event_db, gamma=Inf)
   end
 end
 
-function find_state(event_db, time, state)
+function find_state(event_db:edb, time::float, state)
   """
   Find the individuals falling into `state` (S, I, or R), at `time` from
   a continuous or discrete ILM
@@ -111,7 +113,7 @@ function find_state(event_db, time, state)
   return state_index
 end
 
-function find_recovery_times(event_db, narm=true)
+function find_recovery_times(event_db::edb, narm=true)
   """
   Determine recovery times for individuals
   """
@@ -125,7 +127,7 @@ function find_recovery_times(event_db, narm=true)
   end
 end
 
-function dist_ab_mtx(distance_mat, alpha, beta)
+function dist_ab_mtx(distance_mat, alpha::float, beta::float)
   """
   Find the alpha*(distance matrix^-beta)
   """
@@ -136,7 +138,7 @@ function infection_probabilities(distance_mat_alphabeta, infectious, susceptible
   """
   Determine infection probabilities for all susceptible individuals
   """
-  return 1 .- exp(-sum(distance_mat_alphabeta[susceptible, infectious], 2))
+  return 1 - exp(-sum(distance_mat_alphabeta[susceptible, infectious], 2))
 end
 
 function infection_times(distance_mat_alphabeta, infectious, susceptible)
@@ -156,7 +158,7 @@ function infection_times(distance_mat_alphabeta, infectious, susceptible)
   return infect_times
 end
 
-function infect_recover!(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
+function infect_recover!(distance_mat_alphabeta, event_db::edb, time=1.0, gamma=Inf)
   """
   Propagate infection through a population, default is for a discrete model.
   Use of an SIR or SI model inferred from dimensions of `event_db` and
@@ -167,25 +169,29 @@ function infect_recover!(distance_mat_alphabeta, event_db, time=1.0, gamma=Inf)
   susceptible = find_state(event_db, time, "S")
   infectious = find_state(event_db, time, "I")
   if event_db.cd == "discrete"
-    infect_probs = fill(0, length(susceptible))
+    infect_probs = fill(0.0, length(susceptible))
     infect_probs[susceptible]=infection_probabilities(distance_mat_alphabeta, infectious, susceptible)
     infected = fill(false, length(susceptible))
     for i in 1:length(infect_probs)
       infected[i] = rand() < infect_probs[i]
     end
-    event_db[infected, 3] = time + 1
-    if 0 < gamma < Inf && size(event_db.events)[2] == 4
-      recovery_times = rand(Geometric(1/gamma), sum(infected))
-      event_db.events[infected, 4] = (time + 2) + recovery_times
-      event_time_update!(fill(time+1,sum(infected)) event_db)
-      event_time_update!(time+2+recovery_times, event_db)
+    if sum(infected) > 0
+      event_db.events[infected, 3] = time + 1.0
+      for i = 1:sum(infected)
+        event_time_update!(time + 1.0, event_db)
+      end
+      if 0 < gamma < Inf && size(event_db.events)[2] == 4
+        recovery_times = rand(Geometric(1/gamma), sum(infected))
+        event_db.events[infected, 4] = time + 2.0 + recovery_times
+        event_time_update!(time + 2.0 + recovery_times, event_db)
+      end
     end
   end
   if event_db.cd == "continuous"
     if gamma == Inf && size(event_db.events)[2] == 3
       infect_times = infection_times(distance_mat_alphabeta, infectious, susceptible)
       which_min = infect_times .== minimum(infect_times)
-      event_db.events[which_min,3] = time + infect_times[which_min]
+      event_db.events[which_min, 3] = time + infect_times[which_min]
       event_time_update!(time + infect_times[which_min], event_db)
     end
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
@@ -225,13 +231,13 @@ function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, g
     if gamma == Inf && size(event_db.events)[2] == 3
       while sum(find_state(event_db, time, "S")) > 0
         infect_recover!(distance_mat_alphabeta, event_db, time, Inf)
-        time = time + 1.0
+        time += 1.0
       end
     end
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
       while sum(find_state(event_db, time, "I")) > 0
         infect_recover!(distance_mat_alphabeta, event_db, time, gamma)
-        time = time + 1.0
+        time += 1.0
       end
     end
   end
