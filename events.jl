@@ -29,8 +29,8 @@ function event_time_update!(eventtime, event_db::edb)
   if length(eventtime) > size(event_db.events)[1]
     error("Error: Impossible number of event times (exceeds population size)")
   end
-  if sum(event_db.event_times == Inf) < length(eventtime)
-    error("Error: More event times inputted than there are events left to occur")
+  if sum(event_db.event_times .== Inf) < length(eventtime)
+    warn("Warning: More event times inputted than there are events left to occur")
   end
   if 1 < length(eventtime) < size(event_db.events)[1]
     for i = 1:length(eventtime)
@@ -66,7 +66,7 @@ function initial_infect!(event_db, gamma=Inf)
   end
 end
 
-function find_state(event_db::edb, time, state)
+function find_state2(event_db::edb, time, state)
   """
   Find the individuals falling into `state` (S, I, or R), at `time` from
   a continuous or discrete ILM
@@ -124,6 +124,37 @@ function find_state(event_db::edb, time, state)
   end
   return state_index
 end
+
+function find_state(event_db::edb, time, state)
+  """
+  Find the individuals falling into `state` (S, I, or R), at `time`
+  """
+  state_index = fill(false, size(event_db.events)[1])
+  if state == "S"
+    for i = 1:length(state_index)
+      state_index[i] = isnan(event_db.events[i,3]) || event_db.events[i,3] > time
+    end
+  end
+  if state == "I"
+    if size(event_db.events)[2] == 4       
+      for i = 1:length(state_index)
+        state_index[i] = event_db.events[i,3] <= time && ((isnan(event_db.events[i,4])) || (time < event_db.events[i,4]))
+      end
+    end
+    if size(event_db.events)[2] == 3
+      for i = 1:length(state_index)
+        state_index[i] = event_db.events[i,3] <= time
+      end
+    end
+  end
+  if state == "R"
+    for i = 1:length(state_index)
+      state_index[i] = event_db.events[i,4] <= time
+    end
+  end
+  return state_index
+end
+
 
 function find_recovery_times(event_db::edb, narm=true)
   """
@@ -185,7 +216,9 @@ function infect_recover!(distance_mat_alphabeta, event_db::edb, time=1.0, gamma=
     infect_probs[susceptible]=infection_probabilities(distance_mat_alphabeta, infectious, susceptible)
     infected = fill(false, length(susceptible))
     for i in 1:length(infect_probs)
-      infected[i] = rand() < infect_probs[i]
+      if 0.0 < infect_probs[i] <=1.0
+        infected[i] = rand() < infect_probs[i]
+      end
     end
     if sum(infected) > 0
       event_db.events[infected, 3] = time + 1.0
