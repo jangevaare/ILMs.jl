@@ -8,9 +8,9 @@ examples
 
 Continuous time
 
-[SIR model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SIR.ipynb)
-
 [SI model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SI.ipynb)
+
+[SIR model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SIR.ipynb)
 
 Discrete time
 
