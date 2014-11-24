@@ -10,7 +10,7 @@ function create_event_db(pop_db, cd="discrete", gamma=Inf)
   0. Specify whether for an SI model or an SIR model.
   """
   if gamma == Inf
-    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(Inf, size(pop_db)[1]), cd)
+    return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(Inf, (size(pop_db)[1])), cd)
   end
   if 0 < gamma < Inf
     return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1]), r = fill(NaN, size(pop_db)[1])), fill(Inf, 2*(size(pop_db)[1])), cd)
@@ -23,10 +23,18 @@ function event_time_update!(eventtime, event_db::edb)
   `time`
   """
   maxevents=length(event_db.event_times)
-  if length(eventtime) > 0
+  if length(size(eventtime)) > 1
+    error("Incorrect dimensions of event times (should be 1 dimensional)")  
+  if length(eventtime) > size(event_db.events)[1]
+    error("Impossible number of event times (exceeds population size)")
+  end
+  if 1 < length(eventtime) < size(event_db.events)[1]
     for i = 1:length(eventtime)
       event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime[i] .>= event_db.event_times]], eventtime[i], event_db.event_times[(1:(maxevents-1))[eventtime[i] .< (event_db.event_times[1:(maxevents-1)])]]]
     end
+  end
+  if 1 == length(eventtime)
+    event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime .>= event_db.event_times]], eventtime, event_db.event_times[(1:(maxevents-1))[eventtime .< (event_db.event_times[1:(maxevents-1)])]]]
   end
 end
 
@@ -177,9 +185,7 @@ function infect_recover!(distance_mat_alphabeta, event_db::edb, time=1.0, gamma=
     end
     if sum(infected) > 0
       event_db.events[infected, 3] = time + 1.0
-      for i = 1:sum(infected)
-        event_time_update!(time + 1.0, event_db)
-      end
+      event_time_update!(fill(time + 1.0, sum(infected)), event_db)
       if 0 < gamma < Inf && size(event_db.events)[2] == 4
         recovery_times = rand(Geometric(1/gamma), sum(infected))
         event_db.events[infected, 4] = time + 2.0 + recovery_times
@@ -239,9 +245,9 @@ function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, g
         infect_recover!(distance_mat_alphabeta, event_db, time, gamma)
         time += 1.0
       end
-      if time == 50
+    end
+    if time == 50.0
         warn("Simulation was halted after 50 time steps")
-      end
     end
   end
   if event_db.cd == "continuous"
