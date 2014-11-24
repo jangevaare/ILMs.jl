@@ -17,7 +17,7 @@ function create_event_db(pop_db, cd="discrete", gamma=Inf)
   end
 end
 
-function event_time_update!(eventtime::float, event_db::edb)
+function event_time_update!(eventtime, event_db::edb)
   """
   Update the ordered sequence of event times based on a new event at
   `time`
@@ -54,7 +54,7 @@ function initial_infect!(event_db, gamma=Inf)
   end
 end
 
-function find_state(event_db:edb, time::float, state)
+function find_state(event_db::edb, time, state)
   """
   Find the individuals falling into `state` (S, I, or R), at `time` from
   a continuous or discrete ILM
@@ -127,7 +127,7 @@ function find_recovery_times(event_db::edb, narm=true)
   end
 end
 
-function dist_ab_mtx(distance_mat, alpha::float, beta::float)
+function dist_ab_mtx(distance_mat, alpha, beta)
   """
   Find the alpha*(distance matrix^-beta)
   """
@@ -229,15 +229,18 @@ function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, g
   time=1.0
   if event_db.cd == "discrete"
     if gamma == Inf && size(event_db.events)[2] == 3
-      while sum(find_state(event_db, time, "S")) > 0
+      while sum(find_state(event_db, time, "S")) > 0 && time < 50
         infect_recover!(distance_mat_alphabeta, event_db, time, Inf)
         time += 1.0
       end
     end
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
-      while sum(find_state(event_db, time, "I")) > 0
+      while sum(find_state(event_db, time, "I")) > 0 && time < 50
         infect_recover!(distance_mat_alphabeta, event_db, time, gamma)
         time += 1.0
+      end
+      if time == 50
+        warn("Simulation was halted after 50 time steps")
       end
     end
   end
