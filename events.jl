@@ -261,7 +261,7 @@ function infect_recover!(distance_mat_alphabeta, event_db::edb, time=1.0, gamma=
   end
 end
 
-function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, gamma=Inf)
+function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, gamma=Inf, limit=100)
   """
   Function to generate initial infection then loop infect_recover function as appropriate 
   for continuous and discrete SI and SIR models
@@ -272,36 +272,39 @@ function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, g
   time=1.0
   if event_db.cd == "discrete"
     if gamma == Inf && size(event_db.events)[2] == 3
-      while sum(find_state(event_db, time, "S")) > 0 && time < 50
+      while sum(find_state(event_db, time, "S")) > 0 && time < limit-1
         infect_recover!(distance_mat_alphabeta, event_db, time, Inf)
         time += 1.0
       end
     end
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
-      while sum(find_state(event_db, time, "I")) > 0 && time < 50
+      while sum(find_state(event_db, time, "I")) > 0 && time < limit-1
         infect_recover!(distance_mat_alphabeta, event_db, time, gamma)
         time += 1.0
       end
     end
-    if time == 50.0
-        warn("Warning: Simulation was halted after 50 time steps")
+    if time == limit-1
+        warn("Warning: Simulation was halted after limit reached")
     end
   end
   if event_db.cd == "continuous"
     if gamma == Inf && size(event_db.events)[2] == 3
-      while sum(find_state(event_db, time, "S")) > 0 && time < Inf
+      while sum(find_state(event_db, time, "S")) > 0 && time < limit
         infect_recover!(distance_mat_alphabeta, event_db, time, Inf)
         time = maximum(event_db.events[:,3])
       end
     end
     if 0 < gamma < Inf && size(event_db.events)[2] == 4
-      while sum(find_state(event_db, time, "I")) > 0 && time < Inf
+      while sum(find_state(event_db, time, "I")) > 0 && time < limit
         infect_recover!(distance_mat_alphabeta, event_db, time, gamma)
         if time == maximum(event_db.events[:,3])
           break
         end
         time = maximum(event_db.events[:,3])
       end
+    end
+    if time >= limit
+        warn("Warning: Simulation was halted after limit reached")
     end
   end
   return event_db
