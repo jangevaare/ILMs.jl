@@ -24,9 +24,13 @@ function event_time_update!(eventtime, event_db::edb)
   """
   maxevents=length(event_db.event_times)
   if length(size(eventtime)) > 1
-    error("Incorrect dimensions of event times (should be 1 dimensional)")  
+    error("Error: Incorrect dimensions of event times (should be 1 dimensional)")
+  end
   if length(eventtime) > size(event_db.events)[1]
-    error("Impossible number of event times (exceeds population size)")
+    error("Error: Impossible number of event times (exceeds population size)")
+  end
+  if sum(event_db.event_times == Inf) < length(eventtime)
+    error("Error: More event times inputted than there are events left to occur")
   end
   if 1 < length(eventtime) < size(event_db.events)[1]
     for i = 1:length(eventtime)
@@ -247,7 +251,7 @@ function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, g
       end
     end
     if time == 50.0
-        warn("Simulation was halted after 50 time steps")
+        warn("Warning: Simulation was halted after 50 time steps")
     end
   end
   if event_db.cd == "continuous"
