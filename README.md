@@ -5,8 +5,15 @@ Tools for simulating and performing inference of individual level infectious dis
 
 examples
 ========
-[Simulation of continuous time SIR model](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SIR.ipynb)
 
-[Simulation of continuous time SI model](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SI.ipynb)
+Continuous time
 
-[Simulation of discrete time SI model](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SI.ipynb)
+[SIR model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SIR.ipynb)
+
+[SI model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SI.ipynb)
+
+Discrete time
+
+[SI model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SI.ipynb)
+
+[SIR model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SIR.ipynb)
