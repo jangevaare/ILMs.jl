@@ -5,22 +5,6 @@ pop_db1 = create_pop_db(50, MvNormal(eye(2).*2))
 
 evdb = infect_recover_loop(pop_db1, "continuous", "SIR", 1, 15, 5)
 
-infect_recover_loop(dist_mat_ab1, evdb, 5)
-
-evseries = state_timeseries(evdb)
-
-#TEMP
-#alpha=1
-#beta=15
-#gamma=5
-#distance_mat_alphabeta = dist_ab_mtx(create_dist_mtx(pop_db1), alpha, beta)
-#evdb = create_event_db(pop_db1, "continuous", gamma)
-#initial_infect(evdb, gamma)
-#for i = 1:30
-#    infect_recover(distance_mat_alphabeta, evdb, maximum(evdb.events[3]), gamma)
-#end
-#evdb.events[:,3]
-
 recovery_times1 = find_recovery_times(edb, true)
 sa = susceptible_array_fun(edb, 10)
 ia = infectious_array_fun(edb, 10)

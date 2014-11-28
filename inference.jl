@@ -1,15 +1,19 @@
-include("events.jl")
-using Distributions
+type ea
+  state_array::Array{bool}
+  state::ASCIIString
+  unique_event_times::Vector
+end
 
-function infectious_array_fun(event_db, obs_length)
+function state_array(event_db::edb, state::ASCIIString)
 """
 Save the liklihood function from repetively determining infectious status,
 by producing an array which contains this information for all relevant
 time steps
 """
-  infectious_array=falses(size(event_db)[1], obs_length)
-  for i = 1:obs_length
-    infectious_array[:,i] = find_infectious_fun(event_db, i+1)
+unique_event_times=unique(event_db.event_times[event_db.event_times<Inf])
+sa=ea(fill(false, (size(event_db.events)[1], length(unique_event_times))), state, unique_event_times)
+  for i = 1:length(unique_event_times)
+    infectious_array[:,i] = find_infectious_fun(event_db, unique_event_times[i])
   end
   infectious_array
 end
