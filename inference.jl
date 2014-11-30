@@ -37,6 +37,8 @@ function find_recovery_times(event_db::edb, narm=true)
   end
 end
 
+
+#=
 function create_loglikelihood(distance_mat, event_db::edb)
   """
   Create a log likelihood function for continuous and discrete 
@@ -49,9 +51,6 @@ function create_loglikelihood(distance_mat, event_db::edb)
       end
       dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
       event_loglikes = fill(-Inf, length(state_array.unique_event_times)
-
-
-
 
 
 function create_sir_loglikelihood(distance_mat, susceptible_array, infectious_array, recovery_times)
@@ -78,3 +77,4 @@ alpha, beta, and gamma_inverse
   end
 sir_loglikelihood
 end
+=#
