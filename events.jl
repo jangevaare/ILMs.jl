@@ -155,21 +155,6 @@ function find_state(event_db::edb, time, state)
   return state_index
 end
 
-
-function find_recovery_times(event_db::edb, narm=true)
-  """
-  Determine recovery times for individuals
-  """
-  if narm == false
-    return event_db.events[:,4]  - event_db.events[:,3]
-  elseif narm == true
-    times = event_db.events[:,4]  - event_db.events[:,3]
-    return times[isnan(times).==false]
-  else
-    error("narm (2nd argument) must be boolean")
-  end
-end
-
 function dist_ab_mtx(distance_mat, alpha, beta)
   """
   Find the alpha*(distance matrix^-beta)

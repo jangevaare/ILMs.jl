@@ -1,35 +1,58 @@
-type ea
-  state_array::Array{bool}
-  state::ASCIIString
+type sdb
+  susceptible_array::Array{bool}
+  infectious_array::Array{bool}
   unique_event_times::Vector
+  event_type::Vector{ASCIIString}
 end
 
-function state_array(event_db::edb, state::ASCIIString)
-"""
-Save the liklihood function from repetively determining infectious status,
-by producing an array which contains this information for all relevant
-time steps
-"""
-unique_event_times=unique(event_db.event_times[event_db.event_times<Inf])
-sa=ea(fill(false, (size(event_db.events)[1], length(unique_event_times))), state, unique_event_times)
-  for i = 1:length(unique_event_times)
-    infectious_array[:,i] = find_infectious_fun(event_db, unique_event_times[i])
+function state_array(event_db::edb)
+  """
+  Save the likelihood function from repetively determining state,
+  by producing an array which contains this information for all 
+  relevant time steps
+  """
+  sa=sdb(fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times<Inf])))), 
+    fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times<Inf])))), 
+    unique(event_db.event_times[event_db.event_times<Inf]), fill("I", length(unique(event_db.event_times[event_db.event_times<Inf]))))
+  for i = 1:length(sa.unique_event_times)
+    sa.susceptible_array[:,i] = find_state(event_db, sa.unique_event_times[i], "S")
+    sa.infectious_array[:,i] = find_state(event_db, sa.unique_event_times[i], "I")
   end
-  infectious_array
+  for i = 2:length(sa.unique_event_times)
+    sa.susceptible_array[:,i] == sa.susceptible_array[:,i-1] && sa.event_type[i] = "R"
+  end
+  return sa
 end
 
-function susceptible_array_fun(event_db, obs_length)
-"""
-Save the liklihood function from repetively determining susceptible status,
-by producing an array which contains this information for all relevant
-time steps
-"""
-  susceptible_array=falses(size(event_db)[1], obs_length)
-  for i = 1:obs_length
-    susceptible_array[:,i] = find_susceptible_fun(event_db, i+1)
+function find_recovery_times(event_db::edb, narm=true)
+  """
+  Determine recovery times for individuals
+  """
+  if narm == false
+    return event_db.events[:,4]  - event_db.events[:,3]
   end
-  susceptible_array
+  if narm == true
+    times = event_db.events[:,4]  - event_db.events[:,3]
+    return times[isnan(times).==false]
+  end
 end
+
+function create_loglikelihood(distance_mat, event_db::edb)
+  """
+  Create a log likelihood function for continuous and discrete 
+  SI and SIR models
+  """
+  if event_db.cd == "discrete" && size(event_db.events)[2]==3
+    function loglikelihood(parameters)
+      if parameters[1] <= 0 || parameters[2] <= 0
+        return -Inf
+      end
+      dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
+      event_loglikes = fill(-Inf, length(state_array.unique_event_times)
+
+
+
+
 
 function create_sir_loglikelihood(distance_mat, susceptible_array, infectious_array, recovery_times)
 """
