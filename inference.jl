@@ -11,15 +11,15 @@ function state_array(event_db::edb)
   by producing an array which contains this information for all 
   relevant time steps
   """
-  sa=sdb(fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times<Inf])))), 
-    fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times<Inf])))), 
-    unique(event_db.event_times[event_db.event_times<Inf]), fill("I", length(unique(event_db.event_times[event_db.event_times<Inf]))))
+  sa=sdb(fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), unique(event_db.event_times[event_db.event_times.<Inf]), fill("I", length(unique(event_db.event_times[event_db.event_times.<Inf]))))
   for i = 1:length(sa.unique_event_times)
     sa.susceptible_array[:,i] = find_state(event_db, sa.unique_event_times[i], "S")
     sa.infectious_array[:,i] = find_state(event_db, sa.unique_event_times[i], "I")
   end
   for i = 2:length(sa.unique_event_times)
-    sa.susceptible_array[:,i] == sa.susceptible_array[:,i-1] && sa.event_type[i] = "R"
+    if sa.susceptible_array[:,i] == sa.susceptible_array[:,i-1]
+      sa.event_type[i] = "R"
+    end
   end
   return sa
 end
