@@ -66,65 +66,6 @@ function initial_infect!(event_db, gamma=Inf)
   end
 end
 
-function find_state2(event_db::edb, time, state)
-  """
-  Find the individuals falling into `state` (S, I, or R), at `time` from
-  a continuous or discrete ILM
-  """
-  state_index = fill(false, size(event_db.events)[1])
-  if state == "S"
-    if event_db.cd == "discrete"
-      for i = 1:length(state_index)
-        state_index[i] = isnan(event_db.events[i,3]) || event_db.events[i,3] >= time
-      end
-    end
-    if event_db.cd == "continuous"
-      for i = 1:length(state_index)
-        state_index[i] = isnan(event_db.events[i,3]) || event_db.events[i,3] > time
-      end
-    end
-  end
-  if state == "I"
-    if size(event_db.events)[2] == 4
-      if event_db.cd == "discrete"
-        for i = 1:length(state_index)
-          state_index[i] = event_db.events[i,3] < time && ((isnan(event_db.events[i,4])) || (time <= event_db.events[i,4]))
-        end
-      end
-      if event_db.cd == "continuous"
-        for i = 1:length(state_index)
-          state_index[i] = event_db.events[i,3] <= time && ((isnan(event_db.events[i,4])) || (time < event_db.events[i,4]))
-        end
-      end
-    end
-    if size(event_db.events)[2] == 3
-      if event_db.cd == "discrete"
-        for i = 1:length(state_index)
-          state_index[i] = event_db.events[i,3] < time
-        end
-      end
-      if event_db.cd == "continuous"
-        for i = 1:length(state_index)
-          state_index[i] = event_db.events[i,3] <= time
-        end
-      end
-    end
-  end
-  if state == "R"
-    if event_db.cd == "discrete"
-      for i = 1:length(state_index)
-        state_index[i] = event_db.events[i,4] < time
-      end
-    end
-    if event_db.cd == "continuous"
-      for i = 1:length(state_index)
-        state_index[i] = event_db.events[i,4] <= time
-      end
-    end
-  end
-  return state_index
-end
-
 function find_state(event_db::edb, time, state)
   """
   Find the individuals falling into `state` (S, I, or R), at `time`
