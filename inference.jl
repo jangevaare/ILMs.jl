@@ -1,8 +1,8 @@
 type sdb
-  susceptible_array::Array{bool}
-  infectious_array::Array{bool}
+  susceptible_array::Array
+  infectious_array::Array
   unique_event_times::Vector
-  event_type::Vector{ASCIIString}
+  event_type::Vector
 end
 
 function state_array(event_db::edb)
