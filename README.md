@@ -14,6 +14,8 @@ Continuous time
 
 [SIR model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SIR.ipynb)
 
+[SIR model inference](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_continuous_SIR_inference.ipynb)
+
 Discrete time
 
 [SI model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SI.ipynb)
