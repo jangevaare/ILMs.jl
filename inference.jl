@@ -21,7 +21,7 @@ function state_array(event_db::edb)
     if sa.susceptible[:,i] == sa.susceptible[:,i-1]
       sa.event_type[i] = "R"
     end
-    sa.new_infection = sa.infectious[:,i] .== sa.susceptible[:,i-1]
+    sa.new_infection[:,i] = sa.infectious[:,i] .== sa.susceptible[:,i-1]
   end
   return sa
 end
@@ -39,15 +39,16 @@ function find_recovery_times(event_db::edb, narm=true)
   end
 end
 
-function create_loglikelihood(distance_mat, event_db::edb)
+function create_loglikelihood(pop_db, event_db::edb)
   """
   Create an efficient log likelihood function for continuous and discrete 
   SI and SIR models
   """
   sa = state_array(event_db)
-  rt = find_recovery_times(event_db)
+  distance_mat = create_dist_mtx(pop_db)
   if event_db.cd == "continuous" && size(event_db.events)[2]==4
-    function loglikelihood(parameters)
+    rt = find_recovery_times(event_db)
+    function ilm_loglikelihood(parameters)
       """
       loglikleihood for continuous SIR model
       """
@@ -55,16 +56,38 @@ function create_loglikelihood(distance_mat, event_db::edb)
         return -Inf
       else
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
-        ILM_logliklihood = loglikelihood(Exponential(parameters[3]), rt)
-        for i = 2:length(sa.unique_event_times)
-          if sa.event_type[i] == "I"
+        ilm_ll = loglikelihood(Exponential(parameters[3]), rt)
+        for i = 2:length(sa.event_times)
+          if sa.event_type == "I"
             exp_rates=sum(dist_ab[sa.new_infection[:,i], sa.infectious[:,i-1]], 2).^-1.0
             for j = 1:length(exp_rates)
-              ILM_logliklihood += loglikelihood(Exponential(exp_rates[j]), sa.unique_event_times[i]-sa.unique_event_times[i-1])
+              ilm_ll += loglikelihood(Exponential(exp_rates[j]), [sa.event_times[i]-sa.event_times[i-1]])
             end
           end
+          ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
         end
-        return ILM_logliklihood
+        return ilm_ll
+      end
+    end
+  end
+  if event_db.cd == "continuous" && size(event_db.events)[2]==3
+    function ilm_loglikelihood(parameters)
+      """
+      loglikleihood for continuous SI model
+      """
+      if parameters[1] <= 0 || parameters[2] <= 0
+        return -Inf
+      else
+        dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
+        ilm_ll = 0.0
+        for i = 2:length(sa.event_times)
+            exp_rates=sum(dist_ab[sa.new_infection[:,i], sa.infectious[:,i-1]], 2).^-1.0
+            for j = 1:length(exp_rates)
+              ilm_ll += loglikelihood(Exponential(exp_rates[j]), [sa.event_times[i]-sa.event_times[i-1]])
+            end
+          ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
+        end
+        return ilm_ll
       end
     end
   end
