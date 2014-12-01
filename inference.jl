@@ -46,9 +46,11 @@ function create_loglikelihood(pop_db, event_db::edb)
   """
   sa = state_array(event_db)
   distance_mat = create_dist_mtx(pop_db)
-  if event_db.cd == "continuous" && size(event_db.events)[2]==4
+  if size(event_db.events)[2]==4
     rt = find_recovery_times(event_db)
-    function ilm_loglikelihood(parameters)
+  end
+  if event_db.cd == "continuous" && size(event_db.events)[2]==4
+    function cSIR_ll(parameters)
       """
       loglikleihood for continuous SIR model
       """
@@ -63,15 +65,17 @@ function create_loglikelihood(pop_db, event_db::edb)
             for j = 1:length(exp_rates)
               ilm_ll += loglikelihood(Exponential(exp_rates[j]), [sa.event_times[i]-sa.event_times[i-1]])
             end
+            ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
           end
-          ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
         end
         return ilm_ll
       end
     end
+    return cSIR_ll
   end
+
   if event_db.cd == "continuous" && size(event_db.events)[2]==3
-    function ilm_loglikelihood(parameters)
+    function cSI_ll(parameters)
       """
       loglikleihood for continuous SI model
       """
@@ -90,6 +94,43 @@ function create_loglikelihood(pop_db, event_db::edb)
         return ilm_ll
       end
     end
+    return cSI_ll
+  end
+
+  if event_db.cd == "discrete" && size(event_db.events)[2]==4
+    function dSIR_ll(parameters)
+      """
+      loglikleihood for discrete SIR model
+      """
+      if parameters[1] <= 0 || parameters[2] <= 0 || parameters[3] <= 0
+        return -Inf
+      else
+        dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
+        ilm_ll = loglikelihood(Geometric(1/parameters[3]), rt)
+        for i = 2:maximum(event_db.events[:,2])
+        end
+        return ilm_ll
+      end
+    end
+    return dSIR_ll
+  end
+
+  if event_db.cd == "discrete" && size(event_db.events)[2]==3
+    function dSI_ll(parameters)
+      """
+      loglikleihood for discrete SIR model
+      """
+      if parameters[1] <= 0 || parameters[2] <= 0
+        return -Inf
+      else
+        dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
+        ilm_ll = 0.0
+        for i = 2:maximum(event_db.events[:,2])
+        end
+        return ilm_ll
+      end
+    end
+    return dSI_ll
   end
 end
 
