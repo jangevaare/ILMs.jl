@@ -18,7 +18,7 @@ function state_array(event_db::edb)
   for i = 1:length(sa.event_times)
     sa.susceptible[:,i] = find_state(event_db, sa.event_times[i], "S")
     sa.infectious[:,i] = find_state(event_db, sa.event_times[i], "I")
-    if size(event_db.events)==4
+    if size(event_db.events)[2]==4
       sa.recovered[:,i] = find_state(event_db, sa.event_times[i], "R")
     end
   end
@@ -26,9 +26,9 @@ function state_array(event_db::edb)
     if sa.susceptible[:,i] == sa.susceptible[:,i-1]
       sa.event_type[i] = "R"
     end
-    sa.new_infection[:,i] = sa.infectious[:,i] .== sa.susceptible[:,i-1]
-    if size(event_db.events)==4
-      sa.new_recovery[:,i] = sa.recovered[:,i] .== sa.infectious[:,i-1]
+    sa.new_infection[:,i] = sa.infectious[:,i] & sa.susceptible[:,i-1]
+    if size(event_db.events)[2]==4
+      sa.new_recovery[:,i] = sa.recovered[:,i] & sa.infectious[:,i-1]
     end
   end
   return sa
@@ -66,7 +66,7 @@ function create_loglikelihood(pop_db, event_db::edb)
         return -Inf
       else
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
-        ilm_ll = loglikelihood(Exponential(parameters[3]), rt)
+        ilm_ll = 0.0
         for i = 2:length(sa.event_times)
           if sum(sa.new_infection[:,i]) > 0
             exp_rates=sum(dist_ab[sa.new_infection[:,i], sa.infectious[:,i-1]], 2).^-1.0
@@ -75,10 +75,10 @@ function create_loglikelihood(pop_db, event_db::edb)
             end
           end
           if sum(sa.new_recovery[:,i]) > 0
-            ilm_ll += loglikelihood(Exponential(parameters[3]), fill(sa.event_times[i-1]-sa.event_times[i], sum(sa.new_recovery[:,i])))
+            ilm_ll += loglikelihood(Exponential(1/parameters[3]), fill(sa.event_times[i]-sa.event_times[i-1], sum(sa.new_recovery[:,i])))
           end
           ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
-          ilm_ll += sum(sa.infectious) * parameters[3] * (sa.event_times[i-1]-sa.event_times[i])
+          ilm_ll += sum(sa.infectious[:,i]) * (1/parameters[3]) * (sa.event_times[i-1]-sa.event_times[i])
         end
         return ilm_ll
       end
@@ -118,7 +118,7 @@ function create_loglikelihood(pop_db, event_db::edb)
         return -Inf
       else
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
-        ilm_ll = loglikelihood(Geometric(1/parameters[3]), rt)
+        ilm_ll = 0.0
         for i = 2:maximum(event_db.events[:,2])
         end
         return ilm_ll
