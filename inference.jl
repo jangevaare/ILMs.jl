@@ -1,7 +1,9 @@
 type sdb
   susceptible::Array{Bool,2}
   infectious::Array{Bool,2}
+  recovered::Array{Bool,2}
   new_infection::Array{Bool,2}
+  new_recovery::Array{Bool,2}
   event_times::Array{Float64,1}
   event_type::Array{ASCIIString,1}
 end
@@ -12,16 +14,22 @@ function state_array(event_db::edb)
   by producing an array which contains this information for all 
   relevant time steps
   """
-  sa=sdb(fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), unique(event_db.event_times[event_db.event_times.<Inf]), fill("I", length(unique(event_db.event_times[event_db.event_times.<Inf]))))
+  sa=sdb(fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), fill(false, (size(event_db.events)[1], length(unique(event_db.event_times[event_db.event_times.<Inf])))), unique(event_db.event_times[event_db.event_times.<Inf]), fill("I", length(unique(event_db.event_times[event_db.event_times.<Inf]))))
   for i = 1:length(sa.event_times)
     sa.susceptible[:,i] = find_state(event_db, sa.event_times[i], "S")
     sa.infectious[:,i] = find_state(event_db, sa.event_times[i], "I")
+    if size(event_db.events)==4
+      sa.recovered[:,i] = find_state(event_db, sa.event_times[i], "R")
+    end
   end
   for i = 2:length(sa.event_times)
     if sa.susceptible[:,i] == sa.susceptible[:,i-1]
       sa.event_type[i] = "R"
     end
     sa.new_infection[:,i] = sa.infectious[:,i] .== sa.susceptible[:,i-1]
+    if size(event_db.events)==4
+      sa.new_recovery[:,i] = sa.recovered[:,i] .== sa.infectious[:,i-1]
+    end
   end
   return sa
 end
@@ -60,13 +68,17 @@ function create_loglikelihood(pop_db, event_db::edb)
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
         ilm_ll = loglikelihood(Exponential(parameters[3]), rt)
         for i = 2:length(sa.event_times)
-          if sa.event_type == "I"
+          if sum(sa.new_infection[:,i]) > 0
             exp_rates=sum(dist_ab[sa.new_infection[:,i], sa.infectious[:,i-1]], 2).^-1.0
             for j = 1:length(exp_rates)
               ilm_ll += loglikelihood(Exponential(exp_rates[j]), [sa.event_times[i]-sa.event_times[i-1]])
             end
-            ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
           end
+          if sum(sa.new_recovery[:,i]) > 0
+            ilm_ll += loglikelihood(Exponential(parameters[3]), fill(sa.event_times[i-1]-sa.event_times[i], sum(sa.new_recovery[:,i])))
+          end
+          ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
+          ilm_ll += sum(sa.infectious) * parameters[3] * (sa.event_times[i-1]-sa.event_times[i])
         end
         return ilm_ll
       end
