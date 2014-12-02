@@ -117,20 +117,18 @@ function create_loglikelihood(pop_db, event_db::edb)
       else
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
         ilm_ll = 0.0
-        for i = 2:maximum(event_db.events[:,2])
-          infect_probs=fill(0, length(sa.susceptible[:,i-1]))
-          infect_probs[sa.susceptible[:,i-1]]=infection_probabilities(dist_ab, sa.infectious[:,i-1], sa.susceptible[:,i-1])
-          ilm_ll += sum(log(1-infect_probs[sa.susceptible[:,i]]))
-          ilm_ll += sum(log(infect_probs[sa.new_infection[:,i]]))
+        for i = 2:maximum(event_db.events[:,3])
+          ilm_ll += -sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])
+          ilm_ll += sum(log(1-exp(-sum(dist_ab[sa.new_infection[:,i], sa.infectious[:,i-1]], 2))))
         end
-        ilm_ll += loglikleihood(Geometric(1/parameters[3]), rt)
+        ilm_ll += loglikelihood(Geometric(1/parameters[3]), rt-1)
         return ilm_ll
       end
     end
     return dSIR_ll
   end
 
-  if event_db.cd == "discrete" && size(event_db.events)[2]==3
+  if event_db.cd == "discrete" && size(event_db.events)[2]==3s
     function dSI_ll(parameters)
       """
       loglikleihood for discrete SI model
@@ -140,11 +138,9 @@ function create_loglikelihood(pop_db, event_db::edb)
       else
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
         ilm_ll = 0.0
-        for i = 2:maximum(event_db.events[:,2])
-          infect_probs=fill(0, length(sa.susceptible[:,i-1]))
-          infect_probs[sa.susceptible[:,i-1]]=infection_probabilities(dist_ab, sa.infectious[:,i-1], sa.susceptible[:,i-1])
-          ilm_ll += sum(log(1-infect_probs[sa.susceptible[:,i]]))
-          ilm_ll += sum(log(infect_probs[sa.new_infection[:,i]]))
+        for i = 2:maximum(event_db.events[:,3])
+          ilm_ll += -sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])
+          ilm_ll += sum(log(1-exp(-sum(dist_ab[sa.new_infection[:,i], sa.infectious[:,i-1]], 2))))
         end
         return ilm_ll
       end
