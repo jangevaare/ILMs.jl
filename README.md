@@ -20,4 +20,8 @@ Discrete time
 
 [SI model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SI.ipynb)
 
+[SI model inference](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SI_inference.ipynb)
+
 [SIR model simulation](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SIR.ipynb)
+
+[SIR model inference](http://nbviewer.ipython.org/github/jangevaa/ilmtools/blob/master/example_discrete_SIR_inference.ipynb)
