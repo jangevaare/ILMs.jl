@@ -54,9 +54,6 @@ function create_loglikelihood(pop_db, event_db::edb)
   """
   sa = state_array(event_db)
   distance_mat = create_dist_mtx(pop_db)
-  if size(event_db.events)[2]==4
-    rt = find_recovery_times(event_db)
-  end
   if event_db.cd == "continuous" && size(event_db.events)[2]==4
     function cSIR_ll(parameters)
       """
@@ -75,7 +72,7 @@ function create_loglikelihood(pop_db, event_db::edb)
             end
           end
           if sum(sa.new_recovery[:,i]) > 0
-            ilm_ll += loglikelihood(Exponential(1/parameters[3]), fill(sa.event_times[i]-sa.event_times[i-1], sum(sa.new_recovery[:,i])))
+            ilm_ll += loglikelihood(Exponential(parameters[3]), fill(sa.event_times[i]-sa.event_times[i-1], sum(sa.new_recovery[:,i])))
           end
           ilm_ll += sum(dist_ab[sa.susceptible[:,i], sa.infectious[:,i-1]])*(sa.event_times[i-1]-sa.event_times[i])
           ilm_ll += sum(sa.infectious[:,i]) * (1/parameters[3]) * (sa.event_times[i-1]-sa.event_times[i])
@@ -110,6 +107,7 @@ function create_loglikelihood(pop_db, event_db::edb)
   end
 
   if event_db.cd == "discrete" && size(event_db.events)[2]==4
+    rt = find_recovery_times(event_db)
     function dSIR_ll(parameters)
       """
       loglikleihood for discrete SIR model
@@ -120,7 +118,12 @@ function create_loglikelihood(pop_db, event_db::edb)
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
         ilm_ll = 0.0
         for i = 2:maximum(event_db.events[:,2])
+          infect_probs=fill(0, length(sa.susceptible[:,i-1]))
+          infect_probs[sa.susceptible[:,i-1]]=infection_probabilities(dist_ab, sa.infectious[:,i-1], sa.susceptible[:,i-1])
+          ilm_ll += sum(log(1-infect_probs[sa.susceptible[:,i]]))
+          ilm_ll += sum(log(infect_probs[sa.new_infection[:,i]]))
         end
+        ilm_ll += loglikleihood(Geometric(1/parameters[3]), rt)
         return ilm_ll
       end
     end
@@ -130,7 +133,7 @@ function create_loglikelihood(pop_db, event_db::edb)
   if event_db.cd == "discrete" && size(event_db.events)[2]==3
     function dSI_ll(parameters)
       """
-      loglikleihood for discrete SIR model
+      loglikleihood for discrete SI model
       """
       if parameters[1] <= 0 || parameters[2] <= 0
         return -Inf
@@ -138,6 +141,10 @@ function create_loglikelihood(pop_db, event_db::edb)
         dist_ab = dist_ab_mtx(distance_mat, parameters[1], parameters[2])
         ilm_ll = 0.0
         for i = 2:maximum(event_db.events[:,2])
+          infect_probs=fill(0, length(sa.susceptible[:,i-1]))
+          infect_probs[sa.susceptible[:,i-1]]=infection_probabilities(dist_ab, sa.infectious[:,i-1], sa.susceptible[:,i-1])
+          ilm_ll += sum(log(1-infect_probs[sa.susceptible[:,i]]))
+          ilm_ll += sum(log(infect_probs[sa.new_infection[:,i]]))
         end
         return ilm_ll
       end
