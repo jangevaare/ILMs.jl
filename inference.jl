@@ -128,7 +128,7 @@ function create_loglikelihood(pop_db, event_db::edb)
     return dSIR_ll
   end
 
-  if event_db.cd == "discrete" && size(event_db.events)[2]==3s
+  if event_db.cd == "discrete" && size(event_db.events)[2]==3
     function dSI_ll(parameters)
       """
       loglikleihood for discrete SI model
