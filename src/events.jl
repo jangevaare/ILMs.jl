@@ -206,8 +206,8 @@ for continuous and discrete SI and SIR models
 function infect_recover_loop(pop_db::DataFrame,
                              cd="discrete",
                              ilm="SI",
-                             alpha=1.=::Float64,
-                             beta=1.=::Float64,
+                             alpha=1.::Float64,
+                             beta=1.::Float64,
                              gamma=Inf::Float64,
                              limit=100::Int64)
   distance_mat_alphabeta = dist_ab_mtx(create_dist_mtx(pop_db), alpha, beta)
