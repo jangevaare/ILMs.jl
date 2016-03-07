@@ -4,11 +4,12 @@ type edb
   cd::ASCIIString
 end
 
+
+"""
+Generate an event database, where all individuals are suscpetible at time 0.
+Specify whether for an SI model or an SIR model.
+"""
 function create_event_db(pop_db, cd="discrete", gamma=Inf)
-  """
-  Generate an event database, where all individuals are suscpetible at time
-  0. Specify whether for an SI model or an SIR model.
-  """
   if gamma == Inf
     return edb(DataFrame(ind_id = pop_db[:,1], s = fill(0, size(pop_db)[1]), i = fill(NaN, size(pop_db)[1])), fill(Inf, (size(pop_db)[1])), cd)
   end
@@ -17,11 +18,12 @@ function create_event_db(pop_db, cd="discrete", gamma=Inf)
   end
 end
 
+
+"""
+Update the ordered sequence of event times based on a new event at
+`time`
+"""
 function event_time_update!(eventtime, event_db::edb)
-  """
-  Update the ordered sequence of event times based on a new event at
-  `time`
-  """
   maxevents=length(event_db.event_times)
   if length(size(eventtime)) > 1
     error("Error: Incorrect dimensions of event times (should be 1 dimensional)")
@@ -42,14 +44,15 @@ function event_time_update!(eventtime, event_db::edb)
   end
 end
 
+
+"""
+Randomly infect 1 individual at time = 1.0, A random infection is required
+at the beginning of all simulations. Specify whether ILM is continuous
+("c") or discrete ("d"), which selects between a exponential or geometric
+recovery time functions. If `gamma` (the mean recovery time) is > 0, then
+a recovery for this infection will also be probabilistically generated.
+"""
 function initial_infect!(event_db, gamma=Inf)
-  """
-  Randomly infect 1 individual at time = 1.0, A random infection is required
-  at the beginning of all simulations. Specify whether ILM is continuous
-  ("c") or discrete ("d"), which selects between a exponential or geometric
-  recovery time functions. If `gamma` (the mean recovery time) is > 0, then
-  a recovery for this infection will also be probabilistically generated.
-  """
   chosen_one=sample(event_db.events[:,1], 1)
   event_db.events[chosen_one, 3] = 1.0
   event_time_update!(1.0, event_db)
@@ -66,10 +69,11 @@ function initial_infect!(event_db, gamma=Inf)
   end
 end
 
+
+"""
+Find the individuals falling into `state` (S, I, or R), at `time`
+"""
 function find_state(event_db::edb, time, state)
-  """
-  Find the individuals falling into `state` (S, I, or R), at `time`
-  """
   state_index = fill(false, size(event_db.events)[1])
   if state == "S"
     for i = 1:length(state_index)
@@ -77,7 +81,7 @@ function find_state(event_db::edb, time, state)
     end
   end
   if state == "I"
-    if size(event_db.events)[2] == 4       
+    if size(event_db.events)[2] == 4
       for i = 1:length(state_index)
         state_index[i] = event_db.events[i,3] <= time && ((isnan(event_db.events[i,4])) || (time < event_db.events[i,4]))
       end
@@ -96,45 +100,52 @@ function find_state(event_db::edb, time, state)
   return state_index
 end
 
+
+"""
+Find the alpha*(distance matrix^-beta)
+"""
 function dist_ab_mtx(distance_mat, alpha, beta)
-  """
-  Find the alpha*(distance matrix^-beta)
-  """
   return alpha .* (distance_mat .^ -beta)
 end
 
+
+"""
+Determine infection probabilities for all susceptible individuals
+"""
 function infection_probabilities(distance_mat_alphabeta, infectious, susceptible)
-  """
-  Determine infection probabilities for all susceptible individuals
-  """
   return 1 - exp(-sum(distance_mat_alphabeta[susceptible, infectious], 2))
 end
 
+
+"""
+Generate infection times (exponentially distributed) based on current
+infectious and susceptible. The minimum time will become the next
+infected individual, remaining times will need to be recalculated
+"""
 function infection_times(distance_mat_alphabeta, infectious, susceptible)
-  """
-  Generate infection times (exponentially distributed) based on current
-  infectious and susceptible. The minimum time will become the next
-  infected individual, remaining times will need to be recalculated
-  """
   exponential_rate = fill(Inf, length(susceptible))
   exponential_rate[susceptible] = sum(distance_mat_alphabeta[susceptible, infectious], 2).^-1.0
   infect_times = fill(Inf, length(susceptible))
   for i = 1:length(susceptible)
-    if 0 < exponential_rate[i] < Inf 
+    if 0 < exponential_rate[i] < Inf
       infect_times[i]= rand(Exponential(exponential_rate[i]))
     end
   end
   return infect_times
 end
 
-function infect_recover!(distance_mat_alphabeta, event_db::edb, time=1.0, gamma=Inf)
-  """
-  Propagate infection through a population, default is for a discrete model.
-  Use of an SIR or SI model inferred from dimensions of `event_db` and
-  specifcation of a `gamma` > 0. Default time of previous time step is based
-  on the maximum infection time - which may not work well in discrete SIR
-  models especially
-  """
+
+"""
+Propagate infection through a population, default is for a discrete model.
+Use of an SIR or SI model inferred from dimensions of `event_db` and
+specifcation of a `gamma` > 0. Default time of previous time step is based
+on the maximum infection time - which may not work well in discrete SIR
+models especially
+"""
+function infect_recover!(distance_mat_alphabeta,
+                         event_db::edb,
+                         time=1.0,
+                         gamma=Inf::Float64)
   susceptible = find_state(event_db, time, "S")
   infectious = find_state(event_db, time, "I")
   if event_db.cd == "discrete"
@@ -187,11 +198,18 @@ function infect_recover!(distance_mat_alphabeta, event_db::edb, time=1.0, gamma=
   end
 end
 
-function infect_recover_loop(pop_db, cd="discrete", ilm="SI", alpha=1, beta=1, gamma=Inf, limit=100)
-  """
-  Function to generate initial infection then loop infect_recover function as appropriate 
-  for continuous and discrete SI and SIR models
-  """
+
+"""
+Function to generate initial infection then loop infect_recover function as appropriate
+for continuous and discrete SI and SIR models
+"""
+function infect_recover_loop(pop_db::DataFrame,
+                             cd="discrete",
+                             ilm="SI",
+                             alpha=1.=::Float64,
+                             beta=1.=::Float64,
+                             gamma=Inf::Float64, l
+                             imit=100::Int64)
   distance_mat_alphabeta = dist_ab_mtx(create_dist_mtx(pop_db), alpha, beta)
   event_db = create_event_db(pop_db, cd, gamma)
   initial_infect!(event_db, gamma)

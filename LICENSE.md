@@ -1,6 +1,6 @@
-The ilmtools.jl package is licensed under the MIT "Expat" License:
+The ILMs.jl package is licensed under the MIT "Expat" License:
 
-> Copyright (c) 2014: jangevaa.
+> Copyright (c) 2014-2016: Justin Angevaare.
 >
 > Permission is hereby granted, free of charge, to any person obtaining
 > a copy of this software and associated documentation files (the
