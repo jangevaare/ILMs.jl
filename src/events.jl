@@ -208,8 +208,8 @@ function infect_recover_loop(pop_db::DataFrame,
                              ilm="SI",
                              alpha=1.=::Float64,
                              beta=1.=::Float64,
-                             gamma=Inf::Float64, l
-                             imit=100::Int64)
+                             gamma=Inf::Float64,
+                             limit=100::Int64)
   distance_mat_alphabeta = dist_ab_mtx(create_dist_mtx(pop_db), alpha, beta)
   event_db = create_event_db(pop_db, cd, gamma)
   initial_infect!(event_db, gamma)
