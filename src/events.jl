@@ -36,11 +36,11 @@ function event_time_update!(eventtime, event_db::edb)
   end
   if 1 < length(eventtime) < size(event_db.events)[1]
     for i = 1:length(eventtime)
-      event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime[i] .>= event_db.event_times]], eventtime[i], event_db.event_times[(1:(maxevents-1))[eventtime[i] .< (event_db.event_times[1:(maxevents-1)])]]]
+      event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime[i] .>= event_db.event_times]]; eventtime[i]; event_db.event_times[(1:(maxevents-1))[eventtime[i] .< (event_db.event_times[1:(maxevents-1)])]]]
     end
   end
   if 1 == length(eventtime)
-    event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime .>= event_db.event_times]], eventtime, event_db.event_times[(1:(maxevents-1))[eventtime .< (event_db.event_times[1:(maxevents-1)])]]]
+    event_db.event_times=[event_db.event_times[(1:maxevents)[eventtime .>= event_db.event_times]]; eventtime; event_db.event_times[(1:(maxevents-1))[eventtime .< (event_db.event_times[1:(maxevents-1)])]]]
   end
 end
 
@@ -52,8 +52,12 @@ at the beginning of all simulations. Specify whether ILM is continuous
 recovery time functions. If `gamma` (the mean recovery time) is > 0, then
 a recovery for this infection will also be probabilistically generated.
 """
-function initial_infect!(event_db, gamma=Inf)
-  chosen_one=sample(event_db.events[:,1], 1)
+function initial_infect!(event_db, gamma=Inf, initial=0)
+  if initial==0
+    chosen_one=sample(event_db.events[:,1], 1)
+  else
+    chosen_one=event_db.events[initial, 1]
+  end
   event_db.events[chosen_one, 3] = 1.0
   event_time_update!(1.0, event_db)
   if 0 < gamma < Inf && size(event_db.events)[2] == 4
@@ -63,7 +67,7 @@ function initial_infect!(event_db, gamma=Inf)
     if event_db.cd == "discrete"
       recovery_dist = Geometric(1/gamma)
     end
-    recovery_time = 1.0 + rand(recovery_dist, 1)
+    recovery_time = 1.0 + rand(recovery_dist)
     event_db.events[chosen_one, 4] = recovery_time
     event_time_update!(recovery_time, event_db)
   end
@@ -144,7 +148,7 @@ models especially
 """
 function infect_recover!(distance_mat_alphabeta,
                          event_db::edb,
-                         time=1.0,
+                         time=1.0::Float64,
                          gamma=Inf::Float64)
   susceptible = find_state(event_db, time, "S")
   infectious = find_state(event_db, time, "I")
@@ -209,10 +213,11 @@ function infect_recover_loop(pop_db::DataFrame,
                              alpha=1.::Float64,
                              beta=1.::Float64,
                              gamma=Inf::Float64,
-                             limit=100::Int64)
+                             limit=100::Float64,
+                             initial=0)
   distance_mat_alphabeta = dist_ab_mtx(create_dist_mtx(pop_db), alpha, beta)
   event_db = create_event_db(pop_db, cd, gamma)
-  initial_infect!(event_db, gamma)
+  initial_infect!(event_db, gamma, initial)
   time=1.0
   if event_db.cd == "discrete"
     if gamma == Inf && size(event_db.events)[2] == 3

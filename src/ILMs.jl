@@ -9,6 +9,7 @@ export
   infect_recover_loop,
   state_timeseries,
   state_animation,
+  spatial_states,
   create_loglikelihood
 
 include("population.jl")
